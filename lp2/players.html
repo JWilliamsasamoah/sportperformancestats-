@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sport Performance Stats · Player Profiles</title>
+  <link rel="icon" href="logo.svg">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="players_style.css">
+  <link rel="stylesheet" href="responsive.css">
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="nav-logo"><img src="logo.svg" alt="Sport Performance Stats"></div>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="lobby.html">Lobby</a></li>
+      <li><a href="teams.html">Teams</a></li>
+      <li><a href="players.html" class="active">Players</a></li>
+    </ul>
+  </nav>
+
+  <div class="players-page">
+
+    <aside class="player-sidebar">
+      <div class="sidebar-header">
+        <h2 class="sidebar-title">Players</h2>
+        <input type="text" id="player-search" class="psearch" placeholder="Search by name or team…">
+      </div>
+      <div class="team-filter">
+        <button class="tfbtn active" data-team="all">All Teams</button>
+        <div id="team-filter-btns"></div>
+      </div>
+      <ul id="player-sidebar-list" class="player-sidebar-list">
+        <li style="padding:16px;color:var(--t3);font-size:13px">Loading players…</li>
+      </ul>
+    </aside>
+
+    <main class="player-main" id="player-main">
+
+      <div class="empty-state" id="empty-state">
+        <div class="empty-icon">🏀</div>
+        <h2>Select a player</h2>
+        <p>Choose a player from the sidebar to view their full profile and stats.</p>
+        <p class="empty-hint">Stats are pulled across all saved games.</p>
+      </div>
+
+      <div class="profile-view" id="profile-view" style="display:none">
+
+        <!-- Hero -->
+        <div class="profile-hero">
+          <div class="profile-avatar" id="profile-avatar"></div>
+          <div class="profile-info">
+            <div class="profile-number" id="profile-number"></div>
+            <h1 class="profile-name" id="profile-name"></h1>
+            <div class="profile-team" id="profile-team"></div>
+            <div class="profile-badges" id="profile-badges"></div>
+          </div>
+          <div class="profile-headline-stats" id="profile-headline-stats"></div>
+        </div>
+
+        <!-- Stat Cards -->
+        <div class="stat-cards-row" id="stat-cards-row"></div>
+
+        <!-- Charts: shot / radar / donut -->
+        <div class="profile-charts-grid">
+          <div class="profile-chart-card">
+            <div class="pcc-title">Shot Efficiency</div>
+            <div style="position:relative;height:220px">
+              <canvas id="playerShotChart"></canvas>
+            </div>
+          </div>
+          <div class="profile-chart-card">
+            <div class="pcc-title">Performance Radar</div>
+            <div style="position:relative;height:220px">
+              <canvas id="playerRadarProfile"></canvas>
+            </div>
+          </div>
+          <div class="profile-chart-card">
+            <div class="pcc-title">Scoring Split</div>
+            <div style="position:relative;height:220px">
+              <canvas id="playerDonutChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Game History + line chart -->
+        <div class="game-history-section">
+          <div class="profile-chart-card gh-card">
+            <div class="pcc-title">Game History — click a game to filter</div>
+            <div id="game-history-list" class="game-history-list"></div>
+          </div>
+          <div class="profile-chart-card">
+            <div class="pcc-title">Stats Per Game</div>
+            <div class="gh-legend">
+              <span><span style="background:#f5c518"></span>PTS</span>
+              <span><span style="background:#14b8a6"></span>REB</span>
+              <span><span style="background:#3b82f6"></span>AST</span>
+            </div>
+            <div style="position:relative;height:220px">
+              <canvas id="playerHistoryChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Timeline -->
+        <div class="profile-chart-card">
+          <div class="pcc-title">Play-by-Play Timeline</div>
+          <div id="timeline-log" class="timeline-log"></div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <script type="module" src="players_script.js"></script>
+</body>
+</html>

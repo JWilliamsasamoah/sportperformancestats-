@@ -1,0 +1,451 @@
+/* ── PLAYERS PAGE ── */
+.players-page {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  height: calc(100vh - 61px);
+  overflow: hidden;
+}
+
+/* Sidebar */
+.player-sidebar {
+  background: var(--bg1);
+  border-right: 1px solid var(--line);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.sidebar-header {
+  padding: 16px;
+  border-bottom: 1px solid var(--line);
+  display: flex; flex-direction: column; gap: 10px;
+}
+.sidebar-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 24px; letter-spacing: 1.5px; color: var(--t1);
+}
+.psearch {
+  width: 100%; padding: 9px 12px;
+  background: var(--bg2); border: 1.5px solid var(--line);
+  border-radius: 7px; color: var(--t1); font-size: 13px;
+  outline: none; transition: border-color .15s;
+}
+.psearch:focus { border-color: var(--gold); }
+.psearch::placeholder { color: var(--t3); }
+
+.team-filter {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line);
+  display: flex; flex-wrap: wrap; gap: 6px;
+}
+.tfbtn {
+  font-size: 11px; font-weight: 700; letter-spacing: .5px;
+  padding: 5px 12px; border-radius: 20px;
+  border: 1px solid var(--line); background: var(--bg2); color: var(--t2);
+  cursor: pointer; transition: all .15s; white-space: nowrap;
+}
+.tfbtn:hover  { border-color: var(--blue); color: var(--t1); }
+.tfbtn.active { background: var(--gold); border-color: var(--gold); color: #000; }
+
+.player-sidebar-list {
+  list-style: none; overflow-y: auto; flex: 1; padding: 8px;
+}
+.player-sidebar-list::-webkit-scrollbar { width: 5px; }
+.player-sidebar-list::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
+
+.psl-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: 8px;
+  cursor: pointer; transition: background .12s;
+  border: 1px solid transparent;
+}
+.psl-item:hover  { background: var(--bg2); }
+.psl-item.active { background: var(--bg2); border-color: var(--gold); }
+
+.psl-num {
+  font-family: 'Bebas Neue', sans-serif; font-size: 20px;
+  color: var(--t3); min-width: 28px; text-align: center;
+}
+.psl-item.active .psl-num { color: var(--gold); }
+
+.psl-avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Bebas Neue', sans-serif; font-size: 16px; font-weight: 700;
+  flex-shrink: 0;
+}
+.psl-info { flex: 1; min-width: 0; }
+.psl-name {
+  font-size: 14px; font-weight: 600; color: var(--t1);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.psl-team { font-size: 11px; color: var(--t3); }
+.psl-pts {
+  font-family: 'Bebas Neue', sans-serif; font-size: 20px;
+  color: var(--gold); flex-shrink: 0;
+}
+
+/* Main profile area */
+.player-main {
+  overflow-y: auto; background: var(--bg0);
+}
+.player-main::-webkit-scrollbar { width: 6px; }
+.player-main::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
+
+/* Empty state */
+.empty-state {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  height: 100%; text-align: center; padding: 40px; gap: 12px;
+}
+.empty-icon { font-size: 48px; opacity: .4; }
+.empty-state h2 {
+  font-family: 'Bebas Neue', sans-serif; font-size: 32px;
+  letter-spacing: 2px; color: var(--t1);
+}
+.empty-state p { font-size: 15px; color: var(--t2); }
+.empty-hint { font-size: 13px; color: var(--t3); font-style: italic; }
+
+/* Profile view */
+.profile-view { padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+
+/* Hero */
+.profile-hero {
+  background: var(--bg1); border: 1px solid var(--line);
+  border-radius: var(--r); padding: 28px 24px;
+  display: flex; align-items: center; gap: 24px;
+  box-shadow: var(--shadow);
+  position: relative; overflow: hidden;
+}
+.profile-hero::before {
+  content: '';
+  position: absolute; right: 0; top: 0;
+  width: 300px; height: 100%;
+  background: linear-gradient(135deg, transparent 0%, rgba(245,197,24,.04) 100%);
+  pointer-events: none;
+}
+
+.profile-avatar {
+  width: 80px; height: 80px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Bebas Neue', sans-serif; font-size: 36px;
+  flex-shrink: 0; border: 2px solid var(--line);
+}
+
+.profile-info { flex: 1; min-width: 0; }
+.profile-number {
+  font-family: 'Bebas Neue', sans-serif; font-size: 14px;
+  letter-spacing: 2px; color: var(--gold); margin-bottom: 4px;
+}
+.profile-name {
+  font-family: 'Bebas Neue', sans-serif; font-size: 40px;
+  letter-spacing: 1px; color: var(--t1); line-height: 1;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.profile-team { font-size: 13px; color: var(--t2); margin-top: 4px; }
+
+.profile-badges { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.badge {
+  font-size: 11px; font-weight: 700; letter-spacing: .5px;
+  padding: 3px 10px; border-radius: 20px;
+  text-transform: uppercase;
+}
+.badge-gold   { background: rgba(245,197,24,.15); border: 1px solid rgba(245,197,24,.4); color: var(--gold); }
+.badge-blue   { background: rgba(59,130,246,.15);  border: 1px solid rgba(59,130,246,.4);  color: var(--blue); }
+.badge-green  { background: rgba(34,197,94,.15);   border: 1px solid rgba(34,197,94,.4);   color: var(--grn); }
+.badge-purple { background: rgba(168,85,247,.15);  border: 1px solid rgba(168,85,247,.4);  color: var(--purple); }
+.badge-red    { background: rgba(239,68,68,.15);   border: 1px solid rgba(239,68,68,.4);   color: var(--red); }
+
+.profile-headline-stats {
+  display: flex; gap: 20px; flex-shrink: 0;
+}
+.hs-stat { text-align: center; }
+.hs-val {
+  font-family: 'Bebas Neue', sans-serif; font-size: 44px;
+  letter-spacing: 1px; color: var(--t1); line-height: 1;
+}
+.hs-lbl { font-size: 10px; font-weight: 700; letter-spacing: 2px; color: var(--t3); text-transform: uppercase; }
+
+/* Stat cards row */
+.stat-cards-row {
+  display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px;
+}
+.sc-card {
+  background: var(--bg1); border: 1px solid var(--line);
+  border-radius: 8px; padding: 14px 10px; text-align: center;
+}
+.sc-card-val {
+  font-family: 'Bebas Neue', sans-serif; font-size: 30px;
+  color: var(--t1); line-height: 1; letter-spacing: .5px;
+}
+.sc-card-lbl {
+  font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+  color: var(--t3); text-transform: uppercase; margin-top: 3px;
+}
+.sc-card-pct { font-size: 11px; color: var(--t2); margin-top: 2px; }
+
+/* Profile charts */
+.profile-charts-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+}
+.profile-chart-card {
+  background: var(--bg1); border: 1px solid var(--line);
+  border-radius: var(--r); padding: 18px; box-shadow: var(--shadow);
+}
+.profile-chart-card.wide {
+  grid-column: 1 / -1;
+}
+.pcc-title {
+  font-family: 'Bebas Neue', sans-serif; font-size: 16px;
+  letter-spacing: 1px; color: var(--t1); margin-bottom: 14px;
+}
+
+/* Timeline */
+.timeline-log {
+  display: flex; flex-direction: column; gap: 6px;
+  max-height: 280px; overflow-y: auto;
+}
+.timeline-log::-webkit-scrollbar { width: 5px; }
+.timeline-log::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
+
+.tl-entry {
+  display: flex; align-items: center; gap: 12px;
+  padding: 9px 12px; border-radius: 7px;
+  background: var(--bg2); border: 1px solid var(--line);
+  font-size: 13px;
+}
+.tl-time {
+  font-family: 'Bebas Neue', sans-serif; font-size: 16px;
+  color: var(--t3); min-width: 44px;
+}
+.tl-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.tl-text { color: var(--t2); flex: 1; }
+.tl-text strong { color: var(--t1); }
+
+/* Color mappings for avatar/sidebar */
+.av-blue   { background: rgba(59,130,246,.2);  color: var(--blue); }
+.av-gold   { background: rgba(245,197,24,.2);  color: var(--gold); }
+.av-green  { background: rgba(34,197,94,.2);   color: var(--grn); }
+.av-purple { background: rgba(168,85,247,.2);  color: var(--purple); }
+.av-teal   { background: rgba(20,184,166,.2);  color: var(--teal); }
+.av-red    { background: rgba(239,68,68,.2);   color: var(--red); }
+.av-orange { background: rgba(249,115,22,.2);  color: var(--org); }
+
+@media (max-width: 900px) {
+  .players-page { grid-template-columns: 1fr; height: auto; }
+  .player-sidebar { height: 300px; border-right: none; border-bottom: 1px solid var(--line); }
+  .player-main { height: auto; overflow: visible; }
+  .profile-hero { flex-wrap: wrap; }
+  .profile-headline-stats { width: 100%; justify-content: center; }
+  .stat-cards-row { grid-template-columns: repeat(3, 1fr); }
+  .profile-charts-grid { grid-template-columns: 1fr; }
+}
+
+/* ── Game History Section ── */
+.game-history-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.gh-card { max-height: 320px; display: flex; flex-direction: column; }
+
+.game-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  overflow-y: auto;
+  flex: 1;
+}
+.game-history-list::-webkit-scrollbar { width: 5px; }
+.game-history-list::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
+
+.gh-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 7px;
+  background: var(--bg2);
+  border: 1px solid var(--line);
+  cursor: pointer;
+  transition: background .12s, border-color .12s;
+}
+.gh-row:hover  { background: var(--bg3); border-color: var(--line2); }
+.gh-row.active { background: rgba(245,197,24,.08); border-color: var(--gold); }
+
+.gh-name {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--t1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.gh-row.active .gh-name { color: var(--gold); }
+
+.gh-meta {
+  font-size: 11px;
+  color: var(--t3);
+  white-space: nowrap;
+}
+
+.gh-pts {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  color: var(--t1);
+  min-width: 48px;
+  text-align: right;
+  white-space: nowrap;
+}
+.gh-pts span { font-family: 'DM Sans', sans-serif; font-size: 10px; color: var(--t3); letter-spacing: 1px; margin-left: 2px; }
+.gh-row.active .gh-pts { color: var(--gold); }
+
+/* Per-game chart legend */
+.gh-legend {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 10px;
+  font-size: 12px;
+  color: var(--t2);
+}
+.gh-legend span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.gh-legend span span {
+  width: 10px; height: 10px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+@media (max-width: 900px) {
+  .game-history-section { grid-template-columns: 1fr; }
+}
+
+/* ── Game History Card Rows (replaces old .gh-row) ── */
+.gh-card-row {
+  background: var(--bg2);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: background .12s, border-color .12s;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.gh-card-row:hover  { background: var(--bg3); border-color: var(--line2); }
+.gh-card-row.active { background: rgba(245,197,24,.06); border-color: var(--gold); }
+
+.gh-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.gh-card-left {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.gh-card-badge {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  width: fit-content;
+  text-transform: uppercase;
+}
+.gh-card-badge.season {
+  background: rgba(245,197,24,.15);
+  color: var(--gold);
+  border: 1px solid rgba(245,197,24,.3);
+}
+.gh-card-badge.game {
+  background: rgba(59,130,246,.12);
+  color: var(--blue);
+  border: 1px solid rgba(59,130,246,.25);
+}
+
+.gh-card-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--t1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+.gh-card-row.active .gh-card-title { color: var(--gold); }
+
+.gh-card-sub {
+  font-size: 11px;
+  color: var(--t3);
+}
+
+.gh-card-score {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 36px;
+  line-height: 1;
+  color: var(--t1);
+  text-align: right;
+  flex-shrink: 0;
+}
+.gh-card-score span {
+  display: block;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: var(--t3);
+  text-align: right;
+}
+.gh-card-row.active .gh-card-score { color: var(--gold); }
+
+/* Stat pills row */
+.gh-card-pills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.gh-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--bg0);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 5px 10px;
+  min-width: 40px;
+  gap: 1px;
+}
+.gh-pill-val {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--pill-color, var(--t1));
+}
+.gh-pill-lbl {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--t3);
+  text-transform: uppercase;
+}
+
+/* Section divider */
+.gh-divider {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--t3);
+  padding: 6px 2px 4px;
+  border-bottom: 1px solid var(--line);
+  margin: 4px 0 2px;
+}

@@ -1,0 +1,202 @@
+/* ================================================
+   MLSE LAUNCHPAD · TEAMS PAGE
+   ================================================ */
+:root {
+  --bg0:  #0d0f14;
+  --bg1:  #14171f;
+  --bg2:  #1c2030;
+  --bg3:  #252a38;
+  --line: #2e3447;
+  --t1:   #f0f2f7;
+  --t2:   #8892a8;
+  --t3:   #4d5670;
+  --gold: #f5c518;
+  --blue: #3b82f6;
+  --grn:  #22c55e;
+  --red:  #ef4444;
+  --org:  #f97316;
+  --shadow: 0 4px 24px rgba(0,0,0,.5);
+  --r: 10px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg0);
+  color: var(--t1);
+  min-height: 100vh;
+}
+
+/* NAVBAR */
+.navbar {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--bg1); border-bottom: 1px solid var(--line);
+  padding: 10px 24px; position: sticky; top: 0; z-index: 800;
+}
+.nav-logo img { height: 90px; }
+.nav-links { list-style: none; display: flex; gap: 4px; }
+.nav-links a {
+  font-size: 14px; font-weight: 600; color: var(--t2);
+  text-decoration: none; padding: 8px 14px; border-radius: 7px;
+  transition: background .15s, color .15s;
+}
+.nav-links a:hover  { background: var(--bg2); color: var(--t1); }
+.nav-links a.active { background: var(--gold); color: #000; font-weight: 700; }
+
+/* PAGE */
+.page { max-width: 960px; margin: 30px auto; padding: 0 20px; }
+
+.page-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 48px; letter-spacing: 2px; color: var(--t1);
+}
+
+/* BUTTONS */
+.pbtn {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px; font-weight: 700;
+  padding: 10px 20px; border: none; border-radius: 8px;
+  cursor: pointer; transition: filter .15s, transform .12s;
+}
+.pbtn:hover  { filter: brightness(1.12); transform: translateY(-1px); }
+.pbtn:active { filter: brightness(.9); transform: translateY(0); }
+.pbtn.add  { background: var(--gold); color: #000; }
+.pbtn.save { background: var(--grn);  color: #fff; }
+.pbtn.del  { background: var(--red);  color: #fff; }
+
+/* Inline action buttons in table */
+.abtn {
+  font-size: 12px; font-weight: 700;
+  padding: 6px 12px; border: none; border-radius: 6px;
+  cursor: pointer; transition: filter .12s;
+}
+.abtn:hover { filter: brightness(1.15); }
+.abtn.roster { background: var(--blue); color: #fff; }
+.abtn.win    { background: var(--grn);  color: #fff; }
+.abtn.loss   { background: var(--org);  color: #fff; }
+.abtn.del    { background: var(--red);  color: #fff; }
+
+/* TABLE */
+.table-wrap {
+  background: var(--bg1); border: 1px solid var(--line);
+  border-radius: var(--r); overflow: hidden; box-shadow: var(--shadow);
+}
+
+table { width: 100%; border-collapse: collapse; }
+
+th {
+  background: var(--bg2);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 15px; letter-spacing: 1.5px; color: var(--t2);
+  padding: 14px 16px; text-align: center;
+  border-bottom: 1px solid var(--line);
+}
+
+td {
+  padding: 13px 16px; text-align: center;
+  font-size: 14px; color: var(--t1);
+  border-bottom: 1px solid var(--line);
+}
+
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--bg2); }
+
+.rank { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: var(--t3); }
+.rank.r1 { color: var(--gold); }
+.rank.r2 { color: #9ca3af; }
+.rank.r3 { color: #b45309; }
+
+.tname {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px; letter-spacing: .5px;
+  color: var(--t1); text-align: left;
+}
+
+.tw { color: var(--grn); font-weight: 700; }
+.tl { color: var(--red); font-weight: 700; }
+
+.actions { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
+
+/* OVERLAY / MODAL */
+.overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.75); backdrop-filter: blur(4px);
+  z-index: 1000; display: none;
+  align-items: center; justify-content: center;
+}
+.overlay.open { display: flex; }
+
+.modal {
+  background: var(--bg1); border: 1px solid var(--line);
+  border-radius: 12px; width: 460px; max-width: 96vw;
+  box-shadow: 0 24px 64px rgba(0,0,0,.7);
+  animation: popIn .18s ease; overflow: hidden;
+}
+@keyframes popIn {
+  from { transform: scale(.92) translateY(-8px); opacity: 0; }
+  to   { transform: scale(1)   translateY(0);    opacity: 1; }
+}
+
+.mhdr {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px; background: var(--bg2); border-bottom: 1px solid var(--line);
+  font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 1px; color: var(--t1);
+}
+.mx {
+  background: transparent; border: none; color: var(--t3);
+  font-size: 18px; cursor: pointer; transition: color .15s;
+}
+.mx:hover { color: var(--t1); }
+
+.mbody { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+
+.add-player-row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+input[type="text"], input[type="number"] {
+  flex: 1; min-width: 100px;
+  padding: 10px 12px;
+  background: var(--bg2); border: 1.5px solid var(--line);
+  border-radius: 7px; color: var(--t1);
+  font-family: 'DM Sans', sans-serif; font-size: 14px;
+  outline: none; transition: border-color .15s;
+}
+input:focus { border-color: var(--gold); }
+input::placeholder { color: var(--t3); }
+
+.plist {
+  list-style: none; display: flex; flex-direction: column; gap: 6px;
+  max-height: 260px; overflow-y: auto; padding-right: 4px;
+}
+.plist li {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--bg2); border: 1px solid var(--line);
+  border-radius: 7px; padding: 10px 14px;
+  font-size: 14px; font-weight: 500; color: var(--t1);
+}
+.plist li button {
+  font-size: 12px; font-weight: 700;
+  padding: 5px 12px; background: var(--red); color: #fff;
+  border: none; border-radius: 5px; cursor: pointer;
+  transition: filter .12s;
+}
+.plist li button:hover { filter: brightness(1.1); }
+
+.plist::-webkit-scrollbar { width: 5px; }
+.plist::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
+
+.mftr {
+  padding: 14px 20px; border-top: 1px solid var(--line);
+  display: flex; justify-content: flex-end;
+}
+
+@media (max-width: 600px) {
+  .page-hdr { flex-direction: column; gap: 12px; align-items: flex-start; }
+  .navbar { padding: 10px 14px; }
+  .nav-links a { padding: 6px 10px; font-size: 13px; }
+}

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sport Performance Stats · Teams</title>
+  <link rel="icon" href="logo.svg">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="teams_style.css">
+  <link rel="stylesheet" href="responsive.css">
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="nav-logo"><img src="logo.svg" alt="Sport Performance Stats"></div>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="lobby.html">Lobby</a></li>
+      <li><a href="teams.html" class="active">Teams</a></li>
+      <li><a href="https://torontohousing.ca/programs-and-tenant-engagement/youth-programs/midnight-basketball" target="_blank">Contact</a></li>
+    </ul>
+  </nav>
+
+  <div class="page">
+    <div class="page-hdr">
+      <h1>Standings</h1>
+      <button class="pbtn add" id="add-team-btn">+ Add Team</button>
+    </div>
+
+    <div class="table-wrap">
+      <table id="teams-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Team</th>
+            <th>W</th>
+            <th>L</th>
+            <th>Win %</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="teams-container"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Roster Modal -->
+  <div id="roster-modal" class="overlay">
+    <div class="modal">
+      <div class="mhdr">
+        <span id="team-roster-title">Manage Roster</span>
+        <button class="mx" onclick="closeRosterModal()">✕</button>
+      </div>
+      <div class="mbody">
+        <div class="add-player-row">
+          <input type="text"   id="player-name"   placeholder="Player name">
+          <input type="number" id="player-number" placeholder="Jersey #" min="0" max="99">
+          <button class="pbtn add" onclick="addPlayerToRoster()">+ Add</button>
+        </div>
+        <ul id="player-list" class="plist"></ul>
+      </div>
+      <div class="mftr">
+        <button class="pbtn save" onclick="saveRoster()">💾 Save & Close</button>
+      </div>
+    </div>
+  </div>
+
+  
+
+  <script type="module" src="teams_script.js"></script>
+</body>
+</html>

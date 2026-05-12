@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sport Performance Stats · Game Lobby</title>
+  <link rel="icon" href="logo.svg">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="lobby.css">
+  <link rel="stylesheet" href="responsive.css">
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="nav-logo"><img src="logo.svg" alt="Sport Performance Stats"></div>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="lobby.html" class="active">Lobby</a></li>
+      <li><a href="teams.html">Teams</a></li>
+      <li><a href="players.html">Players</a></li>
+    </ul>
+  </nav>
+
+  <div class="lobby-page">
+
+    <!-- Header -->
+    <div class="lobby-header">
+      <h1>Game Lobby</h1>
+      <p class="lobby-sub">Create a new game or join an existing one. Up to 4 games can run at the same time.</p>
+    </div>
+
+    <!-- Create + Join row -->
+    <div class="action-row">
+
+      <div class="action-card">
+        <div class="ac-icon">🏀</div>
+        <h2>New Game</h2>
+        <p>Start a fresh game. A unique room code will be generated.</p>
+        <div class="ac-fields">
+          <select id="new-home-team" class="lselect">
+            <option value="">Home Team</option>
+          </select>
+          <select id="new-away-team" class="lselect">
+            <option value="">Away Team</option>
+          </select>
+        </div>
+        <button class="lbtn primary" onclick="createGame()">+ Create Game</button>
+      </div>
+
+      <div class="action-divider">OR</div>
+
+      <div class="action-card">
+        <div class="ac-icon">🔑</div>
+        <h2>Join Game</h2>
+        <p>Enter a room code to open an existing game scoreboard.</p>
+        <div class="ac-fields">
+          <input id="join-code" type="text" class="lcode-input" placeholder="Enter room code…" maxlength="6">
+        </div>
+        <button class="lbtn secondary" onclick="joinGame()">→ Join Game</button>
+      </div>
+
+    </div>
+
+    <!-- Active Games -->
+    <div class="active-games-section">
+      <div class="ag-header">
+        <h2 class="ag-title">Active Games</h2>
+        <button class="lbtn ghost" onclick="loadActiveGames()">↻ Refresh</button>
+      </div>
+      <div id="active-games-grid" class="active-games-grid">
+        <div class="ag-loading">Loading games…</div>
+      </div>
+    </div>
+
+  </div>
+
+ 
+
+  <script type="module" src="lobby.js"></script>
+</body>
+</html>

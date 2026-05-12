@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 80" width="380" height="80">
+  <defs>
+    <linearGradient id="ballGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f5c518;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#e0ae0f;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Basketball icon -->
+  <circle cx="40" cy="40" r="28" fill="url(#ballGrad)" />
+  <path d="M 12 40 Q 40 25 68 40" fill="none" stroke="#b8860b" stroke-width="2" stroke-linecap="round"/>
+  <path d="M 12 40 Q 40 55 68 40" fill="none" stroke="#b8860b" stroke-width="2" stroke-linecap="round"/>
+  <line x1="40" y1="12" x2="40" y2="68" stroke="#b8860b" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="31" cy="27" r="5" fill="white" opacity="0.15"/>
+
+  <!-- Vertical divider -->
+  <line x1="82" y1="14" x2="82" y2="66" stroke="#2e3550" stroke-width="1.5"/>
+
+  <!-- Wordmark -->
+  <text x="96" y="28" font-family="'Bebas Neue', 'Arial Black', sans-serif" font-size="17" letter-spacing="3.5" fill="#8b95b0">SPORT PERFORMANCE</text>
+  <text x="96" y="58" font-family="'Bebas Neue', 'Arial Black', sans-serif" font-size="34" letter-spacing="4" fill="#f5c518">STATS</text>
+
+  <!-- Tagline -->
+  <text x="97" y="72" font-family="'DM Sans', Arial, sans-serif" font-size="7.5" font-weight="600" letter-spacing="2.5" fill="#4d5470">ANALYZE · TRACK · DOMINATE</text>
+</svg>

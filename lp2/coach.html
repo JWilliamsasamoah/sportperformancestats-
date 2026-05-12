@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>SPS Launchpad · Coach View</title>
+  <link rel="icon" href="logo.svg">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="coach.css">
+  <link rel="stylesheet" href="responsive.css">
+</head>
+<body class="coach-body">
+
+  <!-- Header -->
+  <header class="coach-header">
+    <img src="logo.svg" alt="SPS" class="ch-logo">
+    <div class="ch-center">
+      <div class="ch-room" id="ch-room">—</div>
+      <div class="ch-team-label" id="ch-team-label">Loading…</div>
+    </div>
+    <div class="ch-live" id="ch-live">
+      <span class="live-dot"></span> LIVE
+    </div>
+  </header>
+
+  <!-- No room state -->
+  <div id="no-room" style="display:none" class="empty-fullpage">
+    <div class="ep-icon">🏀</div>
+    <h2>No Room Found</h2>
+    <p>Ask the scorekeeper for your coach link.</p>
+  </div>
+
+  <!-- Main coach view -->
+  <div id="coach-app" style="display:none">
+
+    <!-- Scoreboard strip -->
+    <div class="score-strip">
+      <div class="ss-team">
+        <div class="ss-name" id="ss-home-name">HOME</div>
+        <div class="ss-score" id="ss-home-score">0</div>
+      </div>
+      <div class="ss-mid">
+        <div class="ss-clock" id="ss-clock">07:00</div>
+        <div class="ss-period" id="ss-period">P1</div>
+        <div class="ss-status" id="ss-status">—</div>
+      </div>
+      <div class="ss-team">
+        <div class="ss-name" id="ss-away-name">AWAY</div>
+        <div class="ss-score" id="ss-away-score">0</div>
+      </div>
+    </div>
+
+    <!-- Tab bar -->
+    <div class="coach-tabs">
+      <button class="ctab active" id="tab-roster-btn"  onclick="switchTab('roster')">👥 Roster</button>
+      <button class="ctab"        id="tab-stats-btn"   onclick="switchTab('stats')">📊 Stats</button>
+      <button class="ctab"        id="tab-charts-btn"  onclick="switchTab('charts')">📈 Charts</button>
+      <button class="ctab"        id="tab-log-btn"     onclick="switchTab('log')">📋 Log</button>
+    </div>
+
+    <!-- TAB: Roster -->
+    <div id="tab-roster" class="ctab-content active">
+      <div class="section-label">ON COURT</div>
+      <ul id="coach-on-court" class="player-list"></ul>
+      <div class="section-label" style="margin-top:16px">BENCH</div>
+      <ul id="coach-bench" class="player-list bench"></ul>
+    </div>
+
+    <!-- TAB: Stats -->
+    <div id="tab-stats" class="ctab-content">
+      <div class="section-label">TEAM STATS</div>
+      <div id="coach-team-pills" class="team-stat-pills"></div>
+      <div class="section-label" style="margin-top:20px">PLAYER STATS</div>
+      <div id="coach-player-cards" class="player-stat-cards"></div>
+    </div>
+
+    <!-- TAB: Charts -->
+    <div id="tab-charts" class="ctab-content">
+      <div class="section-label">SHOOTING EFFICIENCY</div>
+      <div class="chart-wrap">
+        <canvas id="coach-shooting-chart"></canvas>
+      </div>
+      <div class="section-label" style="margin-top:20px">TOP PLAYERS — POINTS</div>
+      <div class="chart-wrap">
+        <canvas id="coach-top-chart"></canvas>
+      </div>
+    </div>
+
+    <!-- TAB: Log -->
+    <div id="tab-log" class="ctab-content">
+      <div class="section-label">LIVE PLAY LOG — YOUR TEAM</div>
+      <div id="coach-log" class="coach-log"></div>
+    </div>
+
+  </div><!-- /coach-app -->
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <script type="module" src="coach.js"></script>
+</body>
+</html>

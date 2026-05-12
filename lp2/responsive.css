@@ -1,0 +1,517 @@
+/* ================================================
+   MLSE LAUNCHPAD — RESPONSIVE OVERHAUL
+   Breakpoints:
+   xs:  <480px   (small phones)
+   sm:  480–767px (phones)
+   md:  768–1023px (tablets)
+   lg:  1024–1279px (small laptops)
+   xl:  1280px+  (desktops — base styles)
+   ================================================ */
+
+/* ── UNIVERSAL FIXES ── */
+* { -webkit-tap-highlight-color: transparent; }
+
+img { max-width: 100%; height: auto; }
+
+input, select, button, textarea {
+  font-family: inherit;
+  touch-action: manipulation; /* prevent 300ms tap delay */
+}
+
+/* Prevent horizontal overflow on all pages */
+html, body { overflow-x: hidden; }
+
+/* ====================================================
+   NAVBAR  — works across all pages
+   ==================================================== */
+
+/* Tablet */
+@media (max-width: 1023px) {
+  .navbar {
+    padding: 8px 16px;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .nav-logo img { height: 36px; }
+  .nav-links { gap: 2px; flex-wrap: wrap; }
+  .nav-links a, .nav-links button {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+  .share-btn { padding: 6px 10px; font-size: 12px; }
+  .room-badge { font-size: 13px; padding: 4px 10px; }
+}
+
+/* Phone */
+@media (max-width: 767px) {
+  .navbar {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    padding: 8px 12px;
+    gap: 8px;
+  }
+  .nav-logo img { height: 32px; }
+  .room-badge { font-size: 12px; letter-spacing: 1px; padding: 3px 8px; justify-self: center; }
+  .nav-links { display: none; } /* hidden on phone — use bottom nav below */
+
+  /* Mobile bottom navigation bar */
+  .mobile-nav {
+    display: flex !important;
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--bg1); border-top: 1px solid var(--line);
+    z-index: 900; padding: 6px 0 env(safe-area-inset-bottom, 6px);
+  }
+  .mobile-nav a, .mobile-nav button {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    gap: 2px; padding: 6px 4px; font-size: 10px; font-weight: 700;
+    color: var(--t3); text-decoration: none; background: transparent;
+    border: none; cursor: pointer; transition: color .15s;
+    letter-spacing: .5px; text-transform: uppercase;
+  }
+  .mobile-nav a.active, .mobile-nav button.active { color: var(--gold); }
+  .mobile-nav .mn-icon { font-size: 18px; line-height: 1; }
+
+  /* Push content above bottom nav */
+  body { padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px)); }
+}
+
+/* All pages: add bottom nav */
+.mobile-nav { display: none; }
+
+/* ====================================================
+   INDEX.HTML — SCOREBOARD / GAME PAGE
+   ==================================================== */
+
+/* Large desktop — 3 columns, comfortable */
+@media (min-width: 1280px) {
+  .board { grid-template-columns: 1fr 1.1fr 1fr; gap: 14px; padding: 16px; }
+  .big-score { font-size: 110px; }
+}
+
+/* Laptop */
+@media (max-width: 1279px) and (min-width: 1024px) {
+  .board { grid-template-columns: 1fr 1.15fr 1fr; gap: 10px; padding: 12px; }
+  .big-score { font-size: 88px; }
+  .clock-display { font-size: 58px; }
+  .sb.fat { font-size: 20px; }
+}
+
+/* Tablet — stack vertically, controls on top */
+@media (max-width: 1023px) and (min-width: 768px) {
+  .board {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto;
+    gap: 10px; padding: 12px;
+  }
+  .control-panel {
+    grid-column: 1 / -1;
+    order: -1;
+  }
+  /* Side-by-side teams under controls */
+  #home-panel { order: 2; }
+  #away-panel { order: 3; }
+
+  .big-score { font-size: 80px; }
+  .clock-display { font-size: 56px; letter-spacing: 4px; }
+
+  /* Controls: two-column button grid */
+  .sgroups { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .sg:first-child, .sg:nth-child(4) { grid-column: 1 / -1; }
+}
+
+/* Phone landscape */
+@media (max-width: 767px) and (min-width: 480px) and (orientation: landscape) {
+  .board {
+    grid-template-columns: 1fr 1.2fr 1fr;
+    gap: 8px; padding: 8px;
+  }
+  .big-score { font-size: 64px; }
+  .clock-display { font-size: 44px; letter-spacing: 3px; }
+  .team-panel { padding: 10px 8px; gap: 8px; }
+  .control-panel { padding: 10px; }
+  .roster li { padding: 6px 10px; font-size: 12px; }
+}
+
+/* Phone portrait — single column stacked */
+@media (max-width: 767px) {
+  .view-bar { padding: 8px 10px; gap: 6px; }
+  .vbtn { padding: 8px 12px; font-size: 13px; flex: 1; text-align: center; }
+
+  .board {
+    grid-template-columns: 1fr;
+    gap: 8px; padding: 10px;
+  }
+
+  /* Controls always on top on phone */
+  .control-panel { order: -1; }
+  #home-panel    { order: 2; }
+  #away-panel    { order: 3; }
+
+  /* Score strip — horizontal on phone */
+  .team-panel { padding: 12px; gap: 8px; }
+  .team-top {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .team-name-display {
+    font-size: 16px; padding: 8px 10px; flex: 1; min-width: 0;
+  }
+  .big-score { font-size: 64px; }
+  .score-lbl { font-size: 9px; }
+  .pills { gap: 6px; }
+  .pill { font-size: 11px; padding: 3px 10px; }
+
+  /* Roster — horizontal scrollable on phone */
+  .roster-block { width: 100%; }
+  .roster {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .roster li {
+    padding: 7px 10px; font-size: 12px;
+    flex: none;
+  }
+  .roster li .rnum { font-size: 14px; min-width: 18px; }
+  .sub-btn { padding: 8px; font-size: 13px; }
+
+  /* Clock */
+  .clock-display { font-size: 52px; letter-spacing: 4px; padding: 10px 20px; }
+  .period-tag { font-size: 10px; }
+  .ci-row input { font-size: 16px; padding: 8px 10px; }
+
+  /* Stat buttons — bigger touch targets */
+  .sgroups { gap: 8px; }
+  .sg { padding: 10px; }
+  .sgr { gap: 5px; flex-wrap: wrap; }
+  .sb { padding: 12px 8px; font-size: 13px; min-height: 44px; }
+  .sb.fat { font-size: 22px; padding: 14px 8px; }
+  .sb.chip { padding: 10px 12px; font-size: 13px; min-height: 44px; }
+  .sb.mss  { min-height: 44px; }
+
+  /* Ctrl buttons */
+  .ctrl-btn { padding: 12px 10px; min-height: 44px; }
+
+  /* End game */
+  .end-game-btn { min-height: 44px; }
+
+  /* Sel indicator */
+  .sel-indicator { font-size: 12px; padding: 8px 12px; }
+  .undo-btn { padding: 6px 10px; font-size: 11px; }
+}
+
+/* Very small phones */
+@media (max-width: 380px) {
+  .clock-display { font-size: 44px; letter-spacing: 3px; }
+  .big-score { font-size: 52px; }
+  .vbtn { font-size: 11px; padding: 7px 6px; }
+  .sb { font-size: 11px; }
+  .sb.fat { font-size: 18px; }
+}
+
+/* ====================================================
+   BOX SCORE / STATS TAB
+   ==================================================== */
+
+@media (max-width: 767px) {
+  .stabs { padding: 8px 12px 0; gap: 0; overflow-x: auto; }
+  .stab { padding: 8px 12px; font-size: 12px; white-space: nowrap; }
+
+  .sbody { padding: 12px; }
+  .stitle { font-size: 20px; margin-bottom: 12px; }
+
+  /* Summary cards — 2 columns on phone */
+  .team-summary-row {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+  .tscard-val { font-size: 22px; }
+  .tscard-lbl { font-size: 9px; }
+
+  /* Log */
+  .log-bar { flex-wrap: wrap; gap: 8px; }
+  .log-bar .ctrl-btn { flex: 1; min-width: 120px; }
+  #clear-all-btn { margin-left: 0 !important; }
+
+  .saved-list li { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .saved-list li span:last-child { display: flex; gap: 6px; width: 100%; }
+  .saved-list li .ctrl-btn { flex: 1; }
+}
+
+@media (max-width: 480px) {
+  .team-summary-row { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ====================================================
+   CHARTS TAB
+   ==================================================== */
+
+@media (max-width: 1023px) {
+  .charts-row { grid-template-columns: 1fr; }
+  .chart-controls-row { flex-wrap: wrap; gap: 8px; }
+  .cselect { min-width: 0; flex: 1; }
+}
+
+@media (max-width: 767px) {
+  .charts-page { padding: 12px; gap: 20px; }
+  .chart-section-title { font-size: 11px; }
+  .ccttl { font-size: 15px; margin-bottom: 10px; }
+}
+
+/* ====================================================
+   MODALS — all sizes
+   ==================================================== */
+
+@media (max-width: 767px) {
+  /* Modals slide up from bottom on phone */
+  .overlay {
+    align-items: flex-end;
+  }
+  .modal {
+    width: 100%;
+    max-width: 100%;
+    border-radius: 16px 16px 0 0;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: slideUp .2s ease;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(100%); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+  }
+  .modal.narrow { max-width: 100%; }
+  .mhdr { padding: 16px 20px; }
+  .mbody { padding: 16px 20px; }
+  .mftr { padding: 12px 20px; gap: 8px; }
+  .mftr .ctrl-btn { min-height: 48px; }
+
+  /* Sub select boxes */
+  .msel { font-size: 15px; }
+
+  /* End score display */
+  .end-score-display { padding: 12px; gap: 10px; }
+  .end-score-display .es-score { font-size: 44px; }
+
+  /* Share modal */
+  .share-link-card { padding: 12px; }
+  .slc-url { font-size: 10px; }
+}
+
+/* ====================================================
+   LOBBY PAGE
+   ==================================================== */
+
+@media (max-width: 1023px) {
+  .action-row {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .action-divider {
+    padding: 10px;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    margin: 0;
+    text-align: center;
+  }
+  .lobby-header h1 { font-size: 44px; }
+}
+
+@media (max-width: 767px) {
+  .lobby-page { padding: 20px 14px; gap: 28px; }
+  .lobby-header h1 { font-size: 36px; }
+  .lobby-sub { font-size: 13px; }
+
+  .action-card { padding: 20px 16px; gap: 12px; }
+  .action-card h2 { font-size: 24px; }
+  .lbtn { min-height: 48px; font-size: 15px; }
+
+  .ag-title { font-size: 24px; }
+  .active-games-grid { grid-template-columns: 1fr; }
+  .game-card { padding: 16px; }
+  .gc-pts { font-size: 36px; }
+  .gc-btn { min-height: 44px; }
+  .lcode-input { font-size: 24px; letter-spacing: 4px; }
+}
+
+/* ====================================================
+   TEAMS PAGE
+   ==================================================== */
+
+@media (max-width: 767px) {
+  .page { padding: 0 12px 20px; margin-top: 16px; }
+  .page-hdr { margin-bottom: 14px; }
+  h1 { font-size: 36px; }
+
+  /* Table: hide Win% col, compress */
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { min-width: 480px; }
+  th, td { padding: 10px 8px; font-size: 12px; }
+  .tname { font-size: 16px; }
+  .gc-score { font-size: 30px; }
+
+  .actions { gap: 4px; }
+  .abtn { padding: 6px 8px; font-size: 11px; }
+  .pbtn { padding: 9px 16px; font-size: 13px; }
+
+  /* Modal */
+  .add-player-row { flex-direction: column; }
+  .add-player-row input { width: 100%; }
+}
+
+/* ====================================================
+   PLAYERS PAGE
+   ==================================================== */
+
+@media (max-width: 1023px) {
+  .players-page { grid-template-columns: 1fr; height: auto; overflow: visible; }
+  .player-sidebar {
+    height: auto; max-height: 340px;
+    border-right: none; border-bottom: 1px solid var(--line);
+  }
+  .player-main { overflow: visible; }
+
+  /* Profile layout */
+  .profile-charts-grid { grid-template-columns: 1fr 1fr; }
+  .game-history-section { grid-template-columns: 1fr; }
+  .stat-cards-row { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 767px) {
+  /* Sidebar smaller on phone */
+  .player-sidebar { max-height: 260px; }
+  .sidebar-header { padding: 12px; }
+  .sidebar-title { font-size: 20px; }
+
+  .team-filter { padding: 8px 12px; gap: 4px; }
+  .tfbtn { padding: 4px 10px; font-size: 11px; }
+
+  /* Profile */
+  .profile-view { padding: 12px; gap: 14px; }
+
+  .profile-hero {
+    flex-direction: column;
+    text-align: center;
+    padding: 16px;
+    gap: 12px;
+  }
+  .profile-avatar { width: 64px; height: 64px; font-size: 28px; }
+  .profile-name { font-size: 32px; }
+  .profile-headline-stats { justify-content: center; width: 100%; gap: 16px; }
+  .hs-val { font-size: 36px; }
+
+  .stat-cards-row { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .sc-card-val { font-size: 24px; }
+  .sc-card-lbl { font-size: 9px; }
+
+  .profile-charts-grid { grid-template-columns: 1fr; }
+  .game-history-section { grid-template-columns: 1fr; }
+}
+
+/* ====================================================
+   COACH PAGE
+   ==================================================== */
+
+/* Coach is already mobile-first — just widen for tablet+ */
+@media (min-width: 768px) {
+  body.coach-body { max-width: 600px; margin: 0 auto; }
+
+  .score-strip { padding: 20px 24px; }
+  .ss-score { font-size: 80px; }
+  .ss-clock { font-size: 36px; }
+
+  .coach-tabs .ctab { font-size: 14px; padding: 14px 8px; }
+
+  .ctab-content { padding: 20px 24px; }
+  .team-stat-pills { grid-template-columns: repeat(6, 1fr); }
+  .psc-body { grid-template-columns: repeat(8, 1fr); }
+
+  .chart-wrap { height: 260px; }
+}
+
+@media (min-width: 1024px) {
+  body.coach-body { max-width: 720px; }
+  .ss-score { font-size: 96px; }
+}
+
+/* ====================================================
+   GRIDJS TABLE — responsive
+   ==================================================== */
+
+@media (max-width: 767px) {
+  .gridjs-wrapper { font-size: 12px !important; }
+  .gridjs-th, .gridjs-td { padding: 8px 6px !important; font-size: 11px !important; }
+  .gridjs-search { padding: 8px !important; }
+  .gridjs-search input { font-size: 13px !important; }
+}
+
+/* ====================================================
+   TOUCH IMPROVEMENTS — all pages
+   ==================================================== */
+
+/* Minimum 44px touch targets for all interactive elements */
+@media (max-width: 767px) {
+  button, a, select, input[type="text"], input[type="number"] {
+    min-height: 44px;
+  }
+  /* But not inline spans or small decorative elements */
+  .badge, .pill, .meta-pill, .psc-pct, .tsp-lbl, .gh-pill {
+    min-height: unset;
+  }
+
+  /* Larger tap area for roster items */
+  .roster li { min-height: 44px; display: flex; align-items: center; }
+  .psl-item { min-height: 52px; }
+}
+
+/* ====================================================
+   UTILITY — safe area insets (iPhone notch / home bar)
+   ==================================================== */
+
+@supports (padding: max(0px)) {
+  .navbar {
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+  }
+  .coach-header {
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+  }
+  .mobile-nav {
+    padding-bottom: max(6px, env(safe-area-inset-bottom));
+  }
+}
+
+/* ====================================================
+   SCROLLBAR HIDING on mobile (cleaner look)
+   ==================================================== */
+@media (max-width: 767px) {
+  .live-log::-webkit-scrollbar,
+  .timeline-log::-webkit-scrollbar,
+  .player-sidebar-list::-webkit-scrollbar,
+  .stabs::-webkit-scrollbar { display: none; }
+
+  .live-log, .timeline-log,
+  .player-sidebar-list, .stabs {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+/* ====================================================
+   PRINT (export / screenshot)
+   ==================================================== */
+@media print {
+  .navbar, .view-bar, .coach-tabs, .mobile-nav,
+  .ctrl-btn, .sb, .sub-btn, .end-game-btn,
+  .undo-btn, .share-btn { display: none !important; }
+
+  body { background: white; color: black; }
+  .board { grid-template-columns: 1fr 1fr 1fr; }
+  .big-score { color: black; }
+  .clock-display { color: black; background: #eee; }
+}

@@ -1,0 +1,1250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sport Performance Stats — Demo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg0:#0a0c11; --bg1:#12151e; --bg2:#1a1e2a; --bg3:#222737; --bg4:#2a3045;
+      --line:#2e3550; --line2:#3d4560;
+      --t1:#eef0f8; --t2:#8b95b0; --t3:#4d5470;
+      --gold:#f5c518; --gold2:#e0ae0f;
+      --blue:#3b82f6; --teal:#14b8a6; --grn:#22c55e; --red:#ef4444; --purple:#a855f7;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html,body{width:100%;height:100%;overflow:hidden;background:var(--bg0);font-family:'DM Sans',sans-serif;color:var(--t1)}
+
+    /* ── PROGRESS BAR ── */
+    #progress-bar{position:fixed;top:0;left:0;height:3px;background:var(--gold);width:0%;transition:width .4s linear;z-index:1000}
+
+    /* ── SCENE WRAPPER ── */
+    #stage{width:100%;height:100%;position:relative}
+    .scene{position:absolute;inset:0;display:flex;flex-direction:column;opacity:0;transition:opacity .6s ease;pointer-events:none}
+    .scene.active{opacity:1;pointer-events:all}
+
+    /* ── CAPTION BAR ── */
+    .caption-bar{position:fixed;bottom:0;left:0;right:0;background:rgba(10,12,17,.92);border-top:1px solid var(--line);padding:16px 32px;display:flex;align-items:center;gap:16px;z-index:500;backdrop-filter:blur(8px)}
+    .caption-step{background:var(--gold);color:#000;font-weight:800;font-size:11px;letter-spacing:1.5px;padding:4px 10px;border-radius:99px;white-space:nowrap}
+    .caption-text{font-size:15px;color:var(--t1);font-weight:500}
+    .caption-sub{font-size:13px;color:var(--t2);margin-left:auto;white-space:nowrap}
+
+    /* ── SCENE NAV ── */
+    .scene-dots{position:fixed;bottom:70px;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:600}
+    .dot{width:6px;height:6px;border-radius:50%;background:var(--t3);transition:background .3s,transform .3s}
+    .dot.active{background:var(--gold);transform:scale(1.4)}
+
+    /* ── FAKE NAVBAR ── */
+    .fake-nav{background:var(--bg1);border-bottom:1px solid var(--line);padding:10px 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+    .fake-nav img{height:52px}
+    .fake-nav-links{display:flex;gap:4px}
+    .fnl{font-size:13px;font-weight:600;color:var(--t2);padding:7px 13px;border-radius:7px;text-decoration:none}
+    .fnl.active{background:var(--gold);color:#000}
+
+    /* ── SCENE CONTENT ── */
+    .scene-body{flex:1;overflow:hidden;position:relative}
+
+    /* ════════════════════════════════
+       SCENE 1 — INTRO
+    ════════════════════════════════ */
+    #s1 .scene-body{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:radial-gradient(ellipse at 50% 30%,rgba(245,197,24,.1) 0%,transparent 60%)}
+    .intro-badge{display:inline-block;background:rgba(245,197,24,.12);color:var(--gold);font-size:12px;font-weight:700;letter-spacing:2.5px;padding:6px 18px;border-radius:99px;border:1px solid rgba(245,197,24,.3);margin-bottom:24px;opacity:0;transform:translateY(10px);transition:all .6s ease .2s}
+    .intro-h1{font-family:'Bebas Neue',sans-serif;font-size:72px;letter-spacing:4px;line-height:1.05;opacity:0;transform:translateY(20px);transition:all .7s ease .4s}
+    .intro-h1 span{color:var(--gold)}
+    .intro-sub{font-size:18px;color:var(--t2);margin-top:16px;opacity:0;transition:all .6s ease .7s}
+    .intro-pill{display:flex;gap:12px;margin-top:32px;justify-content:center;opacity:0;transition:all .6s ease 1s}
+    .ipill{background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:10px 20px;font-size:13px;color:var(--t2)}
+    .ipill span{color:var(--gold);font-weight:700}
+    #s1.active .intro-badge,#s1.active .intro-h1,#s1.active .intro-sub,#s1.active .intro-pill{opacity:1;transform:translateY(0)}
+
+    /* ════════════════════════════════
+       SCENE 2 — TEAMS
+    ════════════════════════════════ */
+    .teams-table-wrap{padding:24px;overflow:auto;height:100%}
+    .teams-table{width:100%;border-collapse:collapse}
+    .teams-table th{font-size:11px;letter-spacing:1.5px;color:var(--t3);font-weight:700;text-transform:uppercase;padding:10px 14px;border-bottom:1px solid var(--line);text-align:left}
+    .teams-table td{padding:14px 14px;border-bottom:1px solid var(--line);font-size:14px}
+    .rank-badge{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:6px;font-weight:800;font-size:13px}
+    .r1{background:rgba(245,197,24,.15);color:var(--gold)}
+    .r2{background:rgba(180,180,180,.1);color:#aaa}
+    .r3{background:rgba(184,115,51,.1);color:#cd7f32}
+    .rn{background:var(--bg3);color:var(--t3)}
+    .team-row{opacity:0;transform:translateX(-16px);transition:all .4s ease}
+    .team-row.show{opacity:1;transform:translateX(0)}
+    .abtn{padding:6px 14px;border-radius:6px;font-size:12px;font-weight:700;border:none;cursor:pointer}
+    .abtn.roster{background:rgba(59,130,246,.15);color:var(--blue)}
+    .abtn.roster.highlight{background:var(--blue);color:#fff;transform:scale(1.05);transition:all .2s}
+
+    /* roster modal */
+    .roster-modal{position:absolute;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .4s;pointer-events:none;z-index:200}
+    .roster-modal.show{opacity:1;pointer-events:all}
+    .roster-box{background:var(--bg1);border:1px solid var(--line);border-radius:16px;width:360px;overflow:hidden}
+    .rmhdr{background:var(--bg2);padding:16px 20px;font-weight:700;font-size:15px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+    .rmclose{color:var(--t3);font-size:18px;cursor:pointer}
+    .rm-player{display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid var(--line);opacity:0;transform:translateX(10px);transition:all .3s ease}
+    .rm-player.show{opacity:1;transform:translateX(0)}
+    .rm-num{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--gold);width:32px}
+    .rm-name{font-size:14px;font-weight:600}
+
+    /* ════════════════════════════════
+       SCENE 3 — LOBBY
+    ════════════════════════════════ */
+    .lobby-body{padding:24px;display:grid;grid-template-columns:1fr 1fr;gap:20px;height:100%}
+    .action-card{background:var(--bg1);border:1px solid var(--line);border-radius:14px;padding:28px;display:flex;flex-direction:column;gap:12px;opacity:0;transform:translateY(16px);transition:all .5s ease}
+    .action-card.show{opacity:1;transform:translateY(0)}
+    .ac-icon{font-size:32px}
+    .ac-h2{font-size:18px;font-weight:700}
+    .ac-p{font-size:13px;color:var(--t2)}
+    .lselect{width:100%;background:var(--bg2);border:1px solid var(--line);color:var(--t1);padding:10px 12px;border-radius:8px;font-size:13px}
+    .lbtn{padding:12px;border-radius:8px;font-weight:700;font-size:14px;border:none;cursor:pointer;text-align:center;transition:all .2s}
+    .lbtn.primary{background:var(--gold);color:#000}
+    .lbtn.primary.pulse{transform:scale(1.04);box-shadow:0 0 20px rgba(245,197,24,.4)}
+    .room-code-reveal{background:var(--bg2);border:1px solid var(--gold);border-radius:10px;padding:14px;text-align:center;opacity:0;transform:scale(.95);transition:all .4s ease;margin-top:4px}
+    .room-code-reveal.show{opacity:1;transform:scale(1)}
+    .rc-label{font-size:11px;color:var(--t3);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px}
+    .rc-code{font-family:'Bebas Neue',sans-serif;font-size:42px;color:var(--gold);letter-spacing:8px}
+    .active-games-section{grid-column:1/-1;background:var(--bg1);border:1px solid var(--line);border-radius:14px;padding:20px;opacity:0;transition:opacity .5s .4s ease}
+    .active-games-section.show{opacity:1}
+    .game-card-mini{background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:14px;display:flex;justify-content:space-between;align-items:center}
+    .gcm-teams{font-weight:700;font-size:14px}
+    .gcm-score{font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--gold)}
+    .gcm-status{font-size:11px;color:var(--grn);font-weight:700;letter-spacing:1px}
+
+    /* ════════════════════════════════
+       SCENE 4 — SCOREBOARD
+    ════════════════════════════════ */
+    .board{display:grid;grid-template-columns:1fr 1.1fr 1fr;gap:10px;padding:12px;height:100%}
+    .team-panel{background:var(--bg1);border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:10px}
+    .team-name-disp{font-size:11px;font-weight:700;letter-spacing:2px;color:var(--t3);text-transform:uppercase}
+    .big-score{font-family:'Bebas Neue',sans-serif;font-size:80px;line-height:1;transition:all .15s}
+    .big-score.bump{transform:scale(1.15);color:var(--gold)}
+    .score-lbl{font-size:11px;color:var(--t3);letter-spacing:2px;text-transform:uppercase}
+    .fpills{display:flex;gap:8px}
+    .fpill{background:var(--bg2);border-radius:6px;padding:5px 12px;font-size:12px;color:var(--t2)}
+    .roster-hdr{font-size:10px;color:var(--t3);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px}
+    .roster-list{list-style:none;display:flex;flex-direction:column;gap:4px}
+    .roster-li{padding:8px 10px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:8px;cursor:pointer;background:var(--bg2);border:1px solid transparent;transition:all .2s}
+    .roster-li.selected{background:rgba(245,197,24,.12);border-color:var(--gold);color:var(--gold)}
+    .rnum{font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--t3);width:24px}
+    .roster-li.selected .rnum{color:var(--gold)}
+
+    .ctrl-panel{background:var(--bg1);border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:12px;align-items:center}
+    .clock{font-family:'Bebas Neue',sans-serif;font-size:52px;color:var(--t1)}
+    .period-tag{font-size:11px;color:var(--t3);letter-spacing:2px;text-transform:uppercase}
+    .sel-bar{background:var(--bg2);border-radius:8px;padding:10px 14px;width:100%;font-size:13px;color:var(--t2);border:1px solid var(--line);transition:all .3s;text-align:center}
+    .sel-bar.on{border-color:var(--gold);color:var(--gold);background:rgba(245,197,24,.08)}
+    .stat-btns{display:flex;flex-direction:column;gap:8px;width:100%}
+    .stat-row{display:flex;gap:8px;justify-content:center}
+    .sb{padding:10px 0;border-radius:8px;border:none;font-weight:800;font-size:14px;cursor:pointer;flex:1;transition:all .2s;color:#000}
+    .sb.gold{background:var(--gold)}
+    .sb.blue{background:var(--blue);color:#fff}
+    .sb.teal{background:var(--teal);color:#fff}
+    .sb.chip{background:var(--bg3);color:var(--t2);font-size:12px;font-weight:700}
+    .sb.active-flash{transform:scale(.93);filter:brightness(1.3)}
+
+    .live-log{background:var(--bg2);border-radius:8px;padding:10px;width:100%;max-height:100px;overflow:hidden}
+    .log-entry{font-size:11px;color:var(--t2);padding:2px 0;border-bottom:1px solid var(--line)}
+    .log-entry strong{color:var(--t1)}
+    .log-entry.new{color:var(--gold)}
+
+    /* ════════════════════════════════
+       SCENE 5 — BOX SCORE
+    ════════════════════════════════ */
+    .box-wrap{padding:16px;height:100%;display:flex;flex-direction:column;gap:12px}
+    .stabs{display:flex;gap:6px}
+    .stab{padding:8px 18px;border-radius:8px;font-size:13px;font-weight:700;background:var(--bg2);color:var(--t2);border:1px solid var(--line)}
+    .stab.active{background:var(--gold);color:#000;border-color:var(--gold)}
+    .summary-row{display:flex;gap:10px}
+    .tscard{background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:12px 16px;text-align:center;flex:1;opacity:0;transform:translateY(8px);transition:all .3s ease}
+    .tscard.show{opacity:1;transform:translateY(0)}
+    .tscard-val{font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--gold)}
+    .tscard-lbl{font-size:10px;color:var(--t3);letter-spacing:1.5px;text-transform:uppercase;margin-top:2px}
+    .box-table{width:100%;border-collapse:collapse;font-size:12px}
+    .box-table th{font-size:10px;color:var(--t3);letter-spacing:1.5px;text-transform:uppercase;padding:8px 10px;border-bottom:1px solid var(--line);text-align:left}
+    .box-table td{padding:10px 10px;border-bottom:1px solid var(--line)}
+    .box-row{opacity:0;transform:translateX(-10px);transition:all .3s ease}
+    .box-row.show{opacity:1;transform:translateX(0)}
+
+    /* ════════════════════════════════
+       SCENE 6 — CHARTS
+    ════════════════════════════════ */
+    #s6 .scene-body{overflow-y:auto;display:flex;flex-direction:column}
+    .charts-wrap{padding:12px 16px 0;display:grid;grid-template-columns:1fr 1fr;gap:12px;flex-shrink:0}
+    .chart-card{background:var(--bg1);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px;min-height:220px;opacity:0;transform:translateY(12px);transition:all .5s ease}
+    .chart-card.show{opacity:1;transform:translateY(0)}
+    /* player comparison */
+    .cmp-section{padding:12px 16px 16px;flex-shrink:0;opacity:0;transform:translateY(16px);transition:all .5s ease}
+    .cmp-section.show{opacity:1;transform:translateY(0)}
+    .cmp-section-lbl{font-size:10px;color:var(--t3);letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:10px}
+    .cmp-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;font-size:13px;color:var(--t2);font-weight:600}
+    .csel{background:var(--bg2);border:1px solid var(--line2);color:var(--t1);padding:7px 14px;border-radius:8px;font-size:13px;font-weight:600}
+    .vs-b{background:var(--gold);color:#000;font-weight:900;font-size:11px;padding:4px 10px;border-radius:6px}
+    .cmp-charts-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    /* grouped bars */
+    .gbar-chart{display:flex;align-items:flex-end;justify-content:center;gap:18px;flex:1;padding:4px 8px 0}
+    .gbar-group{display:flex;flex-direction:column;align-items:center;gap:4px}
+    .gbar-pair{display:flex;align-items:flex-end;gap:3px}
+    .gbar{width:16px;border-radius:3px 3px 0 0;transition:height .8s cubic-bezier(.22,1,.36,1);height:0}
+    .gbar-lbl{font-size:10px;color:var(--t3)}
+    /* legend */
+    .cmp-legend{display:flex;gap:12px;margin-bottom:6px}
+    .cleg{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--t2)}
+    .cleg-dot{width:8px;height:8px;border-radius:50%}
+    .cc-title{font-size:11px;color:var(--t3);letter-spacing:1.5px;text-transform:uppercase;font-weight:700}
+    .bar-chart{display:flex;align-items:flex-end;justify-content:center;gap:16px;flex:1;padding:8px 16px 0}
+    .bar-wrap{display:flex;flex-direction:column;align-items:center;gap:4px;width:64px;flex-shrink:0;justify-content:flex-end;height:100%}
+    .bar{width:100%;border-radius:4px 4px 0 0;transition:height .8s cubic-bezier(.22,1,.36,1);height:0;min-height:0}
+    .bar-lbl{font-size:10px;color:var(--t3)}
+    .bar-val{font-size:11px;font-weight:700;color:var(--t2)}
+    .h-bar-chart{display:flex;flex-direction:column;gap:8px;flex:1;justify-content:center}
+    .h-bar-row{display:flex;align-items:center;gap:8px}
+    .h-bar-name{font-size:11px;color:var(--t2);width:80px;text-align:right;flex-shrink:0}
+    .h-bar-track{flex:1;height:10px;background:var(--bg3);border-radius:99px;overflow:hidden}
+    .h-bar-fill{height:100%;border-radius:99px;width:0;transition:width .9s ease}
+    .h-bar-val{font-size:11px;color:var(--t2);width:28px;flex-shrink:0}
+    /* radar */
+    .radar-wrap{flex:1;display:flex;align-items:center;justify-content:center}
+
+    /* ════════════════════════════════
+       SCENE 7 — COACH VIEW
+    ════════════════════════════════ */
+    #s7 .scene-body{display:flex;align-items:center;justify-content:center;background:var(--bg0);gap:40px;padding:20px}
+    .phone-frame{width:320px;height:560px;background:var(--bg1);border:2px solid var(--line2);border-radius:32px;overflow:hidden;flex-shrink:0;box-shadow:0 20px 60px rgba(0,0,0,.6);opacity:0;transform:translateY(20px) scale(.97);transition:all .6s ease}
+    .phone-frame.show{opacity:1;transform:translateY(0) scale(1)}
+    .coach-hdr{background:var(--bg2);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}
+    .ch-logo-sm{height:28px}
+    .live-dot-wrap{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--grn)}
+    .live-dot{width:8px;height:8px;border-radius:50%;background:var(--grn);animation:pulse 1.2s infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+    .score-strip{background:var(--bg2);padding:14px;display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;text-align:center;border-bottom:1px solid var(--line)}
+    .ss-name{font-size:10px;color:var(--t3);letter-spacing:1.5px;text-transform:uppercase}
+    .ss-score{font-family:'Bebas Neue',sans-serif;font-size:44px;line-height:1}
+    .ss-score.my-team{color:var(--gold)}
+    .ss-clock{font-family:'Bebas Neue',sans-serif;font-size:28px}
+    .ss-period{font-size:10px;color:var(--t3);letter-spacing:1px}
+    .coach-tabs-sm{display:flex;gap:4px;padding:8px;background:var(--bg2);border-bottom:1px solid var(--line)}
+    .ctab-sm{flex:1;padding:6px;border-radius:6px;font-size:10px;font-weight:700;background:transparent;color:var(--t2);border:none;text-align:center}
+    .ctab-sm.active{background:var(--gold);color:#000}
+    .coach-roster{padding:10px}
+    .coach-pl{display:flex;align-items:center;gap:8px;padding:8px 6px;border-bottom:1px solid var(--line)}
+    .cp-num{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--gold);width:28px}
+    .cp-name{font-size:12px;font-weight:600;flex:1}
+    .cp-pts{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--t1)}
+    .cp-sub{font-size:10px;color:var(--t3)}
+    .coach-desc{max-width:320px;opacity:0;transition:opacity .5s .4s}
+    .coach-desc.show{opacity:1}
+    .cd-title{font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:2px;margin-bottom:12px}
+    .cd-pts{display:flex;flex-direction:column;gap:10px}
+    .cd-pt{display:flex;align-items:flex-start;gap:10px;font-size:14px;color:var(--t2)}
+    .cd-pt span{color:var(--gold);font-size:18px;flex-shrink:0}
+
+    /* ════════════════════════════════
+       SCENE 8 — PLAYER PROFILE
+    ════════════════════════════════ */
+    .profile-wrap{padding:16px;height:100%;display:flex;flex-direction:column;gap:14px;overflow:hidden}
+    .profile-hero{background:var(--bg1);border:1px solid var(--line);border-radius:14px;padding:20px;display:flex;gap:20px;align-items:center;opacity:0;transform:translateY(10px);transition:all .5s ease}
+    .profile-hero.show{opacity:1;transform:translateY(0)}
+    .av{width:64px;height:64px;border-radius:16px;background:rgba(245,197,24,.15);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--gold);flex-shrink:0}
+    .ph-info{flex:1}
+    .ph-num{font-size:11px;color:var(--t3);font-weight:700}
+    .ph-name{font-size:22px;font-weight:800;line-height:1.2}
+    .ph-team{font-size:13px;color:var(--t2);margin-top:2px}
+    .ph-badges{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+    .badge{padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700}
+    .badge-gold{background:rgba(245,197,24,.15);color:var(--gold);border:1px solid rgba(245,197,24,.3)}
+    .badge-blue{background:rgba(59,130,246,.15);color:var(--blue);border:1px solid rgba(59,130,246,.3)}
+    .ph-stats{display:flex;gap:20px;text-align:center}
+    .phs{display:flex;flex-direction:column}
+    .phs-val{font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--gold)}
+    .phs-lbl{font-size:10px;color:var(--t3);letter-spacing:1.5px;text-transform:uppercase}
+    .profile-charts{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;flex:1;min-height:0}
+    .pc-card{background:var(--bg1);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px;opacity:0;transform:translateY(10px);transition:all .4s ease}
+    .pc-card.show{opacity:1;transform:translateY(0)}
+    .pc-title{font-size:10px;color:var(--t3);letter-spacing:1.5px;text-transform:uppercase;font-weight:700}
+    /* stat cards row */
+    .sc-row-demo{display:flex;gap:8px;flex-shrink:0}
+    .sc-card-d{background:var(--bg1);border:1px solid var(--line);border-radius:10px;padding:14px 8px;text-align:center;flex:1;opacity:0;transform:translateY(10px);transition:all .3s ease}
+    .sc-card-d.show{opacity:1;transform:translateY(0)}
+    .sc-val-d{font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--gold);line-height:1}
+    .sc-lbl-d{font-size:9px;color:var(--t3);letter-spacing:1.5px;text-transform:uppercase;margin-top:3px}
+    /* bar chart bottom-anchored */
+    .bar-chart-bottom{display:flex;align-items:flex-end;gap:10px;flex:1}
+    .bar-wrap-b{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;height:100%}
+    .bar-space{flex:1;display:flex;align-items:flex-end;width:100%}
+    .bar-b{width:100%;border-radius:4px 4px 0 0;transition:height .9s cubic-bezier(.22,1,.36,1);height:0px}
+    /* sidebar */
+    .pp-page{display:flex;height:100%;overflow:hidden}
+    .pp-sidebar{width:220px;flex-shrink:0;border-right:1px solid var(--line);background:var(--bg1);display:flex;flex-direction:column;overflow:hidden}
+    .pp-sidebar-hdr{padding:14px 16px;border-bottom:1px solid var(--line);flex-shrink:0}
+    .pp-sidebar-title{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;margin-bottom:8px}
+    .pp-search{width:100%;background:var(--bg2);border:1px solid var(--line);color:var(--t2);padding:8px 12px;border-radius:8px;font-size:12px}
+    .pp-player-list{flex:1;overflow-y:auto;padding:6px}
+    .pp-player-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;cursor:pointer;transition:background .2s;border:1px solid transparent;opacity:0;transform:translateX(-10px);transition:all .3s ease}
+    .pp-player-item.show{opacity:1;transform:translateX(0)}
+    .pp-player-item.active{background:rgba(245,197,24,.08);border-color:var(--gold)}
+    .pp-av{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0;color:#000;background:rgba(245,197,24,.7)}
+    .pp-pname{font-size:13px;font-weight:600;flex:1}
+    .pp-pteam{font-size:10px;color:var(--t3)}
+    .pp-ppts{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--gold)}
+    .pp-pnum{font-size:11px;color:var(--t3);font-weight:700;width:18px;flex-shrink:0}
+    /* main */
+    .pp-main{flex:1;padding:14px;display:flex;flex-direction:column;gap:10px;overflow:hidden;min-width:0}
+
+    /* ════════════════════════════════
+       SCENE 9 — OUTRO
+    ════════════════════════════════ */
+    #s9 .scene-body{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:radial-gradient(ellipse at 50% 50%,rgba(245,197,24,.1) 0%,transparent 65%)}
+    .outro-logo{opacity:0;transform:scale(.9);transition:all .7s ease .2s}
+    .outro-logo.show{opacity:1;transform:scale(1)}
+    .outro-tagline{font-size:16px;color:var(--t2);margin-top:16px;letter-spacing:3px;text-transform:uppercase;opacity:0;transition:all .6s ease .6s}
+    .outro-tagline.show{opacity:1}
+    .outro-cta{margin-top:32px;background:var(--gold);color:#000;font-weight:700;font-size:15px;padding:14px 36px;border-radius:10px;opacity:0;transition:all .6s ease 1s;border:none;cursor:pointer}
+    .outro-cta.show{opacity:1}
+    .outro-link{margin-top:16px;font-size:13px;color:var(--t3);opacity:0;transition:all .6s ease 1.2s}
+    .outro-link.show{opacity:1}
+    .outro-link a{color:var(--blue);text-decoration:none}
+
+    /* ── CURSOR ── */
+    #cursor{position:fixed;width:20px;height:20px;border-radius:50%;background:rgba(245,197,24,.6);border:2px solid var(--gold);pointer-events:none;z-index:9999;transform:translate(-50%,-50%);transition:left .4s ease,top .4s ease,transform .1s,opacity .3s;opacity:0}
+    #cursor.click{transform:translate(-50%,-50%) scale(.7)}
+    #cursor.visible{opacity:1}
+
+    /* ── REPLAY BTN ── */
+    #replay{position:fixed;top:16px;right:16px;background:var(--bg2);border:1px solid var(--line);color:var(--t2);font-size:12px;font-weight:700;padding:8px 16px;border-radius:8px;cursor:pointer;z-index:1000;display:none}
+    #replay:hover{border-color:var(--gold);color:var(--gold)}
+  </style>
+</head>
+<body>
+
+<div id="progress-bar"></div>
+<div id="cursor"></div>
+<button id="replay" onclick="startDemo()">↺ Replay</button>
+
+<div class="scene-dots" id="dots"></div>
+
+<div id="stage">
+
+  <!-- SCENE 1: INTRO -->
+  <div class="scene" id="s1">
+    <div class="scene-body">
+      <div class="intro-badge">🏀 Real-Time Basketball Analytics</div>
+      <div class="intro-h1">SPORT<br><span>PERFORMANCE</span><br>STATS</div>
+      <div class="intro-sub">Track · Analyze · Dominate</div>
+      <div class="intro-pill">
+        <div class="ipill"><span>Live</span> Real-Time Sync</div>
+        <div class="ipill"><span>10+</span> Stats Per Player</div>
+        <div class="ipill"><span>XLSX</span> Export</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCENE 2: TEAMS -->
+  <div class="scene" id="s2">
+    <div class="fake-nav">
+      <img src="logo.svg" alt="SPS">
+      <div class="fake-nav-links">
+        <span class="fnl">Home</span>
+        <span class="fnl">Lobby</span>
+        <span class="fnl active">Teams</span>
+        <span class="fnl">Players</span>
+      </div>
+    </div>
+    <div class="scene-body">
+      <div class="teams-table-wrap">
+        <table class="teams-table">
+          <thead><tr><th>#</th><th>Team</th><th>W</th><th>L</th><th>Win %</th><th>Actions</th></tr></thead>
+          <tbody id="teams-body"></tbody>
+        </table>
+      </div>
+      <div class="roster-modal" id="roster-modal">
+        <div class="roster-box">
+          <div class="rmhdr">
+            <span>Roster — Raptors 905</span>
+            <span class="rmclose" id="rm-close">✕</span>
+          </div>
+          <div id="rm-players"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCENE 3: LOBBY -->
+  <div class="scene" id="s3">
+    <div class="fake-nav">
+      <img src="logo.svg" alt="SPS">
+      <div class="fake-nav-links">
+        <span class="fnl">Home</span>
+        <span class="fnl active">Lobby</span>
+        <span class="fnl">Teams</span>
+        <span class="fnl">Players</span>
+      </div>
+    </div>
+    <div class="scene-body">
+      <div class="lobby-body">
+        <div class="action-card" id="create-card">
+          <div class="ac-icon">🏀</div>
+          <div class="ac-h2">New Game</div>
+          <div class="ac-p">Start a fresh game. A unique room code will be generated.</div>
+          <select class="lselect" id="home-sel"><option>Raptors 905</option><option>Scarborough Ballers</option></select>
+          <select class="lselect" id="away-sel"><option>Scarborough Ballers</option><option>Raptors 905</option></select>
+          <button class="lbtn primary" id="create-btn">+ Create Game</button>
+          <div class="room-code-reveal" id="rc-reveal">
+            <div class="rc-label">Room Created</div>
+            <div class="rc-code">HX7K2P</div>
+          </div>
+        </div>
+        <div class="active-games-section" id="active-games">
+          <div style="font-size:13px;font-weight:700;color:var(--t2);margin-bottom:12px;letter-spacing:1px;text-transform:uppercase">Active Games</div>
+          <div class="game-card-mini">
+            <div>
+              <div class="gcm-teams">Raptors 905 vs Scarborough Ballers</div>
+              <div class="gcm-status">● LIVE</div>
+            </div>
+            <div class="gcm-score">48 — 41</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCENE 4: SCOREBOARD -->
+  <div class="scene" id="s4">
+    <div class="fake-nav">
+      <img src="logo.svg" alt="SPS">
+      <div style="background:var(--bg2);border:1px solid var(--line2);border-radius:6px;padding:5px 16px;font-size:12px;font-weight:700;color:var(--gold);letter-spacing:1.5px">ROOM: HX7K2P</div>
+      <div class="fake-nav-links">
+        <span class="fnl" style="background:var(--gold);color:#000;border-radius:7px">📲 Coach Links</span>
+        <span class="fnl">Home</span>
+        <span class="fnl">← Lobby</span>
+        <span class="fnl">Teams</span>
+        <span class="fnl">Players</span>
+      </div>
+    </div>
+    <div class="scene-body">
+      <div style="display:flex;gap:8px;justify-content:center;padding:8px;background:var(--bg1);border-bottom:1px solid var(--line)">
+        <button style="padding:6px 16px;border-radius:50px;font-size:12px;font-weight:700;background:var(--gold);color:#000;border:none">🏀 Scoreboard</button>
+        <button style="padding:6px 16px;border-radius:50px;font-size:12px;font-weight:700;background:var(--bg2);color:var(--t2);border:1px solid var(--line)">📊 Box Score</button>
+        <button style="padding:6px 16px;border-radius:50px;font-size:12px;font-weight:700;background:var(--bg2);color:var(--t2);border:1px solid var(--line)">📈 Charts</button>
+      </div>
+      <div class="board">
+
+        <!-- HOME TEAM -->
+        <div class="team-panel">
+          <div style="background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:7px 12px;text-align:center;font-size:13px;font-weight:700">Raptors 905</div>
+          <div class="big-score" id="home-score">48</div>
+          <div class="score-lbl">HOME</div>
+          <div class="fpills"><div class="fpill">Fouls <strong>3</strong></div><div class="fpill">T.O. <strong>2</strong></div></div>
+          <div class="roster-hdr">ON COURT — tap to select</div>
+          <ul class="roster-list" id="home-roster" style="flex:1"></ul>
+          <button style="width:100%;padding:9px;border-radius:8px;background:transparent;border:1px solid var(--blue);color:var(--blue);font-weight:700;font-size:12px;margin-top:auto">⇄ Substitute</button>
+        </div>
+
+        <!-- CONTROL PANEL -->
+        <div class="ctrl-panel" style="gap:6px;padding:14px;overflow-y:auto">
+          <div class="clock" id="game-clock" style="font-size:46px">04:22</div>
+          <div class="period-tag">PERIOD 3 / 4</div>
+          <div style="display:flex;gap:5px;width:100%">
+            <input style="flex:1;background:var(--bg2);border:1px solid var(--line);color:var(--t2);padding:6px 10px;border-radius:7px;font-size:12px;outline:none" placeholder="MM:SS" readonly>
+            <button style="padding:6px 12px;border-radius:7px;background:var(--bg3);color:var(--t2);border:1px solid var(--line);font-size:12px;font-weight:700">SET</button>
+          </div>
+          <div style="display:flex;gap:5px;width:100%">
+            <button style="flex:1;padding:9px;border-radius:8px;background:var(--grn);color:#fff;font-weight:800;font-size:13px;border:none">▶ START</button>
+            <button style="flex:1;padding:9px;border-radius:8px;background:var(--red);color:#fff;font-weight:800;font-size:13px;border:none">↺ RESET</button>
+          </div>
+          <button style="width:100%;padding:7px;border-radius:8px;background:transparent;border:1px solid var(--line);color:var(--t2);font-weight:700;font-size:12px">🏁 End Game</button>
+          <div class="sel-bar" id="sel-bar" style="font-size:12px;padding:7px 12px;display:flex;align-items:center;justify-content:space-between">
+            <span>● No player selected</span>
+            <span style="font-size:11px;color:var(--t3)">↩ Undo</span>
+          </div>
+          <!-- Fouls & Timeouts -->
+          <div style="width:100%">
+            <div style="font-size:9px;color:var(--t3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px">Fouls &amp; Timeouts</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
+              <button style="padding:7px 4px;font-size:11px;background:#e67e22;color:#fff;border:none;border-radius:7px;font-weight:700">Home Foul</button>
+              <button style="padding:7px 4px;font-size:11px;background:#e67e22;color:#fff;border:none;border-radius:7px;font-weight:700">Away Foul</button>
+              <button style="padding:7px 4px;font-size:11px;background:var(--bg3);color:var(--t2);border:1px solid var(--line);border-radius:7px;font-weight:700">Home T.O.</button>
+              <button style="padding:7px 4px;font-size:11px;background:var(--bg3);color:var(--t2);border:1px solid var(--line);border-radius:7px;font-weight:700">Away T.O.</button>
+            </div>
+          </div>
+          <!-- Scoring -->
+          <div style="width:100%">
+            <div style="font-size:9px;color:var(--t3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px">Scoring</div>
+            <div style="display:flex;gap:5px">
+              <button class="sb gold" id="btn-2" style="flex:1;padding:11px 0;font-size:18px;font-weight:900;border-radius:8px;border:none">+2</button>
+              <button class="sb blue" id="btn-3" style="flex:1;padding:11px 0;font-size:18px;font-weight:900;color:#fff;border-radius:8px;border:none">+3</button>
+              <button class="sb teal" id="btn-ft" style="flex:1;padding:11px 0;font-size:18px;font-weight:900;color:#fff;border-radius:8px;border:none">FT</button>
+            </div>
+          </div>
+          <!-- Other Stats -->
+          <div style="width:100%">
+            <div style="font-size:9px;color:var(--t3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px">Other Stats</div>
+            <div style="display:flex;gap:4px;flex-wrap:wrap">
+              <button class="sb chip" id="btn-ast" style="padding:6px 10px;font-size:11px;flex:1">AST</button>
+              <button class="sb chip" id="btn-reb" style="padding:6px 10px;font-size:11px;flex:1">REB</button>
+              <button class="sb chip" id="btn-blk" style="padding:6px 10px;font-size:11px;flex:1">BLK</button>
+              <button class="sb chip" id="btn-stl" style="padding:6px 10px;font-size:11px;flex:1">STL</button>
+              <button class="sb chip" style="padding:6px 10px;font-size:11px;background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.3);border-radius:7px;font-weight:700;flex:1">TOV</button>
+            </div>
+          </div>
+          <!-- Missed Shots -->
+          <div style="width:100%">
+            <div style="font-size:9px;color:var(--t3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px">Missed Shots</div>
+            <div style="display:flex;gap:4px">
+              <button style="flex:1;padding:7px 4px;font-size:11px;background:transparent;border:1px solid rgba(239,68,68,.4);color:var(--red);border-radius:7px;font-weight:700">Miss 2PT</button>
+              <button style="flex:1;padding:7px 4px;font-size:11px;background:transparent;border:1px solid rgba(239,68,68,.4);color:var(--red);border-radius:7px;font-weight:700">Miss 3PT</button>
+              <button style="flex:1;padding:7px 4px;font-size:11px;background:transparent;border:1px solid rgba(239,68,68,.4);color:var(--red);border-radius:7px;font-weight:700">Miss FT</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- AWAY TEAM -->
+        <div class="team-panel">
+          <div style="background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:7px 12px;text-align:center;font-size:13px;font-weight:700">Scarborough Ballers</div>
+          <div class="big-score" id="away-score">41</div>
+          <div class="score-lbl">AWAY</div>
+          <div class="fpills"><div class="fpill">Fouls <strong>5</strong></div><div class="fpill">T.O. <strong>3</strong></div></div>
+          <div class="roster-hdr">ON COURT — tap to select</div>
+          <ul class="roster-list" id="away-roster" style="flex:1"></ul>
+          <button style="width:100%;padding:9px;border-radius:8px;background:transparent;border:1px solid var(--blue);color:var(--blue);font-weight:700;font-size:12px;margin-top:auto">⇄ Substitute</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- SCENE 5: BOX SCORE -->
+  <div class="scene" id="s5">
+    <div class="fake-nav">
+      <img src="logo.svg" alt="SPS">
+      <div style="background:var(--bg2);border:1px solid var(--line);border-radius:6px;padding:5px 12px;font-size:12px;font-weight:700;color:var(--gold)">Room: HX7K2P</div>
+      <div class="fake-nav-links"><span class="fnl">Home</span><span class="fnl">← Lobby</span></div>
+    </div>
+    <div class="scene-body">
+      <div class="box-wrap">
+        <div class="stabs">
+          <button class="stab active">🏠 Home</button>
+          <button class="stab">✈ Away</button>
+          <button class="stab">📋 Log</button>
+          <button class="stab" style="margin-left:auto;background:rgba(59,130,246,.15);color:var(--blue);border-color:rgba(59,130,246,.3)">⬇ Export</button>
+        </div>
+        <div class="summary-row" id="summary-row"></div>
+        <table class="box-table">
+          <thead><tr><th>Player</th><th>PTS</th><th>REB</th><th>AST</th><th>STL</th><th>BLK</th><th>TOV</th><th>2PT%</th><th>3PT%</th></tr></thead>
+          <tbody id="box-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCENE 6: CHARTS -->
+  <div class="scene" id="s6">
+    <div class="fake-nav">
+      <img src="logo.svg" alt="SPS">
+      <div style="background:var(--bg2);border:1px solid var(--line);border-radius:6px;padding:5px 12px;font-size:12px;font-weight:700;color:var(--gold)">Room: HX7K2P</div>
+      <div class="fake-nav-links"><span class="fnl">Home</span><span class="fnl">← Lobby</span></div>
+    </div>
+    <div class="scene-body">
+      <div class="charts-wrap" id="charts-wrap"></div>
+
+      <!-- Player Comparison -->
+      <div class="cmp-section" id="cmp-section">
+        <div class="cmp-section-lbl">Player Comparison</div>
+        <div class="cmp-row">
+          Compare:
+          <div class="csel">Jordan Williams &nbsp;▾</div>
+          <span class="vs-b">VS</span>
+          <div class="csel">Marcus Lee &nbsp;▾</div>
+        </div>
+        <div class="cmp-charts-row">
+          <div class="chart-card" id="cmp-stat-card" style="opacity:0;min-height:200px">
+            <div class="cc-title">Stat Breakdown</div>
+            <div class="cmp-legend">
+              <span class="cleg"><span class="cleg-dot" style="background:var(--gold)"></span>J. Williams</span>
+              <span class="cleg"><span class="cleg-dot" style="background:var(--purple)"></span>M. Lee</span>
+            </div>
+            <div class="gbar-chart" id="gbar-chart"></div>
+          </div>
+          <div class="chart-card" id="cmp-radar-card" style="opacity:0;min-height:200px">
+            <div class="cc-title">Efficiency Radar</div>
+            <div style="flex:1;display:flex;align-items:center;justify-content:center">
+              <svg viewBox="0 0 220 220" width="200" height="200">
+                <!-- grid hexagons -->
+                <polygon points="110,28 182,68 182,152 110,192 38,152 38,68" fill="none" stroke="var(--line)" stroke-width="1.2"/>
+                <polygon points="110,55 158,81 158,139 110,165 62,139 62,81" fill="none" stroke="var(--line)" stroke-width="1"/>
+                <polygon points="110,82 134,95 134,125 110,138 86,125 86,95" fill="none" stroke="var(--line)" stroke-width="0.8"/>
+                <!-- axis lines -->
+                <line x1="110" y1="110" x2="110" y2="28" stroke="var(--line)" stroke-width="0.8"/>
+                <line x1="110" y1="110" x2="182" y2="68" stroke="var(--line)" stroke-width="0.8"/>
+                <line x1="110" y1="110" x2="182" y2="152" stroke="var(--line)" stroke-width="0.8"/>
+                <line x1="110" y1="110" x2="110" y2="192" stroke="var(--line)" stroke-width="0.8"/>
+                <line x1="110" y1="110" x2="38" y2="152" stroke="var(--line)" stroke-width="0.8"/>
+                <line x1="110" y1="110" x2="38" y2="68" stroke="var(--line)" stroke-width="0.8"/>
+                <!-- P1 polygon (gold) — Jordan Williams -->
+                <polygon id="radar-p1" points="110,38 172,73 168,142 110,182 44,148 42,72" fill="rgba(245,197,24,0.15)" stroke="var(--gold)" stroke-width="2" opacity="0" style="transition:opacity .8s ease .6s"/>
+                <!-- P2 polygon (purple) — Marcus Lee -->
+                <polygon id="radar-p2" points="110,62 150,86 148,134 110,158 70,134 68,86" fill="rgba(168,85,247,0.15)" stroke="var(--purple)" stroke-width="2" opacity="0" style="transition:opacity .8s ease .9s"/>
+                <!-- dots P1 -->
+                <circle cx="110" cy="38" r="3" fill="var(--gold)" opacity="0" id="rd1a"/><circle cx="172" cy="73" r="3" fill="var(--gold)" opacity="0" id="rd1b"/><circle cx="168" cy="142" r="3" fill="var(--gold)" opacity="0" id="rd1c"/><circle cx="110" cy="182" r="3" fill="var(--gold)" opacity="0" id="rd1d"/><circle cx="44" cy="148" r="3" fill="var(--gold)" opacity="0" id="rd1e"/><circle cx="42" cy="72" r="3" fill="var(--gold)" opacity="0" id="rd1f"/>
+                <!-- labels -->
+                <text x="110" y="19" text-anchor="middle" fill="var(--t2)" font-size="11">Scoring</text>
+                <text x="194" y="68" text-anchor="start" fill="var(--t2)" font-size="11">Rebounding</text>
+                <text x="194" y="158" text-anchor="start" fill="var(--t2)" font-size="11">Playmaking</text>
+                <text x="110" y="212" text-anchor="middle" fill="var(--t2)" font-size="11">Defense</text>
+                <text x="26" y="158" text-anchor="end" fill="var(--t2)" font-size="11">Efficiency</text>
+                <text x="26" y="68" text-anchor="end" fill="var(--t2)" font-size="11">Hustle</text>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCENE 7: COACH VIEW -->
+  <div class="scene" id="s7">
+    <div class="scene-body">
+      <div class="phone-frame" id="phone-frame">
+        <div class="coach-hdr">
+          <img src="logo.svg" class="ch-logo-sm" alt="SPS">
+          <div class="live-dot-wrap"><div class="live-dot"></div> LIVE</div>
+        </div>
+        <div class="score-strip">
+          <div><div class="ss-name">Raptors 905</div><div class="ss-score my-team" id="cv-home">51</div></div>
+          <div><div class="ss-clock">04:22</div><div class="ss-period">P3</div></div>
+          <div><div class="ss-name">Scarborough</div><div class="ss-score" id="cv-away">41</div></div>
+        </div>
+        <div class="coach-tabs-sm">
+          <button class="ctab-sm active">👥 Roster</button>
+          <button class="ctab-sm">📊 Stats</button>
+          <button class="ctab-sm">📈 Charts</button>
+          <button class="ctab-sm">📋 Log</button>
+        </div>
+        <div class="coach-roster" id="coach-roster"></div>
+      </div>
+      <div class="coach-desc" id="coach-desc">
+        <div class="cd-title">COACH VIEW</div>
+        <div class="cd-pts">
+          <div class="cd-pt"><span>📲</span> Share a link with each coach</div>
+          <div class="cd-pt"><span>👁</span> Read-only — no login needed</div>
+          <div class="cd-pt"><span>⚡</span> Updates in real-time</div>
+          <div class="cd-pt"><span>📊</span> Full stats, charts & play log</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCENE 8: PLAYER PROFILE -->
+  <div class="scene" id="s8">
+    <div class="fake-nav">
+      <img src="logo.svg" alt="SPS">
+      <div class="fake-nav-links">
+        <span class="fnl">Home</span><span class="fnl">Lobby</span>
+        <span class="fnl">Teams</span><span class="fnl active">Players</span>
+      </div>
+    </div>
+    <div class="scene-body" style="display:flex;flex-direction:row;overflow:hidden">
+      <!-- Sidebar -->
+      <div class="pp-sidebar">
+        <div class="pp-sidebar-hdr">
+          <div class="pp-sidebar-title">PLAYERS</div>
+          <input class="pp-search" placeholder="Search by name or team…" readonly>
+        </div>
+        <ul class="pp-player-list" id="pp-player-list"></ul>
+      </div>
+      <!-- Main -->
+      <div class="pp-main">
+        <div class="profile-hero" id="profile-hero">
+          <div class="av" style="width:56px;height:56px;font-size:22px">JW</div>
+          <div class="ph-info">
+            <div class="ph-num">#23</div>
+            <div class="ph-name" style="font-size:20px">Jordan Williams</div>
+            <div class="ph-team">Raptors 905 &nbsp;·&nbsp; <span style="color:var(--t3);font-size:11px">Season Totals</span></div>
+            <div class="ph-badges" style="margin-top:6px">
+              <span class="badge badge-gold">20+ PTS</span>
+              <span class="badge badge-gold">Double-Double</span>
+              <span class="badge badge-blue">50%+ FG</span>
+            </div>
+          </div>
+          <div class="ph-stats">
+            <div class="phs"><div class="phs-val" id="pp-pts">0</div><div class="phs-lbl">PTS</div></div>
+            <div class="phs"><div class="phs-val" id="pp-reb">0</div><div class="phs-lbl">REB</div></div>
+            <div class="phs"><div class="phs-val" id="pp-ast">0</div><div class="phs-lbl">AST</div></div>
+            <div class="phs"><div class="phs-val" id="pp-fg">0%</div><div class="phs-lbl">FG%</div></div>
+          </div>
+        </div>
+        <div class="sc-row-demo" id="sc-row-demo"></div>
+        <div class="profile-charts" id="profile-charts" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;flex:1;min-height:0"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCENE 9: OUTRO -->
+  <div class="scene" id="s9">
+    <div class="scene-body">
+      <img src="logo.svg" class="outro-logo" id="outro-logo" style="height:100px" alt="SPS">
+      <div class="outro-tagline" id="outro-tagline">ANALYZE · TRACK · DOMINATE</div>
+      <button class="outro-cta" id="outro-cta" onclick="startDemo()">↺ Watch Again</button>
+      <div class="outro-link" id="outro-link">
+        <a href="index.html">→ Go to the App</a>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /stage -->
+
+<!-- CAPTION BAR -->
+<div class="caption-bar" id="caption-bar">
+  <span class="caption-step" id="cap-step">01</span>
+  <span class="caption-text" id="cap-text">Introducing Sport Performance Stats</span>
+  <span class="caption-sub" id="cap-sub">Real-Time Basketball Analytics</span>
+</div>
+
+<script>
+const SCENES = [
+  { id:'s1', dur:3800, step:'01', text:'Introducing Sport Performance Stats', sub:'Real-Time Basketball Analytics' },
+  { id:'s2', dur:5000, step:'02', text:'Set up your teams and build rosters', sub:'Teams Page' },
+  { id:'s3', dur:4500, step:'03', text:'Create a game room — get a unique code instantly', sub:'Game Lobby' },
+  { id:'s4', dur:7000, step:'04', text:'Tap a player, record any stat in real time', sub:'Live Scoreboard' },
+  { id:'s5', dur:3500, step:'05', text:'Full box score updates live — export to Excel anytime', sub:'Box Score' },
+  { id:'s6', dur:5500, step:'06', text:'Instant charts — shooting %, team stats, player comparison', sub:'Analytics' },
+  { id:'s7', dur:4000, step:'07', text:'Coaches get their own live read-only view', sub:'Coach View' },
+  { id:'s8', dur:4000, step:'08', text:'Every player has a full season profile', sub:'Player Profiles' },
+  { id:'s9', dur:9999, step:'09', text:'Sport Performance Stats', sub:'Built from scratch 🏀' },
+];
+
+const TOTAL_DUR = SCENES.slice(0,-1).reduce((a,s)=>a+s.dur,0);
+
+const homeRoster = [
+  {num:'23',name:'Jordan Williams'},
+  {num:'5',name:'Marcus Lee'},
+  {num:'11',name:'Devon Clarke'},
+  {num:'7',name:'Aidan Brooks'},
+  {num:'14',name:'Tyler Nash'},
+];
+const awayRoster = [
+  {num:'3',name:'Chris Okafor'},
+  {num:'21',name:'Dante Moore'},
+  {num:'8',name:'Jamal Reid'},
+  {num:'15',name:'Kyle Santos'},
+  {num:'10',name:'Evan Price'},
+];
+const teamsData = [
+  {rank:1,name:'Raptors 905',w:8,l:2,pct:'80.0%',medal:'🥇'},
+  {rank:2,name:'Scarborough Ballers',w:6,l:4,pct:'60.0%',medal:'🥈'},
+  {rank:3,name:'North York Knights',w:5,l:5,pct:'50.0%',medal:'🥉'},
+  {rank:4,name:'Etobicoke Eagles',w:3,l:7,pct:'30.0%',medal:''},
+];
+const boxData = [
+  {name:'Jordan Williams',pts:23,reb:10,ast:5,stl:2,blk:1,tov:3,fg2:'62%',fg3:'40%'},
+  {name:'Marcus Lee',pts:12,reb:7,ast:3,stl:1,blk:2,tov:2,fg2:'55%',fg3:'—'},
+  {name:'Devon Clarke',pts:8,reb:3,ast:8,stl:3,blk:0,tov:1,fg2:'50%',fg3:'33%'},
+  {name:'Aidan Brooks',pts:5,reb:2,ast:1,stl:0,blk:1,tov:1,fg2:'40%',fg3:'0%'},
+];
+
+let currentScene = -1;
+let sceneTimer = null;
+let elapsed = 0;
+let progressTimer = null;
+
+// ── DOTS ──
+const dotsEl = document.getElementById('dots');
+SCENES.forEach((_,i) => {
+  const d = document.createElement('div');
+  d.className = 'dot';
+  d.id = `dot-${i}`;
+  dotsEl.appendChild(d);
+});
+
+function setDot(i) {
+  document.querySelectorAll('.dot').forEach((d,j)=> d.classList.toggle('active', j===i));
+}
+
+// ── CURSOR ──
+const cur = document.getElementById('cursor');
+function moveCursor(x,y,delay=0){
+  setTimeout(()=>{cur.classList.add('visible'); cur.style.left=x+'px'; cur.style.top=y+'px';},delay);
+}
+function clickCursor(delay=0){
+  setTimeout(()=>{cur.classList.add('click'); setTimeout(()=>cur.classList.remove('click'),150);},delay);
+}
+function hideCursor(delay=0){ setTimeout(()=>cur.classList.remove('visible'),delay); }
+
+// ── CAPTION ──
+function setCaption(step,text,sub){
+  document.getElementById('cap-step').textContent = step;
+  document.getElementById('cap-text').textContent = text;
+  document.getElementById('cap-sub').textContent  = sub;
+}
+
+// ── PROGRESS ──
+function startProgress(totalMs){
+  const bar = document.getElementById('progress-bar');
+  const start = Date.now();
+  clearInterval(progressTimer);
+  progressTimer = setInterval(()=>{
+    const pct = Math.min(100, ((Date.now()-start)/totalMs)*100);
+    bar.style.width = pct+'%';
+    if(pct>=100) clearInterval(progressTimer);
+  },50);
+}
+
+// ── SCENE RUNNERS ──
+function runScene2(){
+  const tbody = document.getElementById('teams-body');
+  tbody.innerHTML='';
+  teamsData.forEach((t,i)=>{
+    const cls = i===0?'r1':i===1?'r2':i===2?'r3':'rn';
+    const tr = document.createElement('tr');
+    tr.className='team-row';
+    tr.id=`tr-${i}`;
+    tr.innerHTML=`<td><span class="rank-badge ${cls}">${t.rank}</span></td>
+      <td style="font-weight:700">${t.name}${t.medal?' '+t.medal:''}</td>
+      <td style="color:var(--grn);font-weight:700">${t.w}</td>
+      <td style="color:var(--red)">${t.l}</td>
+      <td style="font-weight:700">${t.pct}</td>
+      <td><button class="abtn roster" id="rb-${i}">Roster</button></td>`;
+    tbody.appendChild(tr);
+    setTimeout(()=>tr.classList.add('show'), i*150+200);
+  });
+
+  // click Roster button on row 0
+  setTimeout(()=>{
+    const btn = document.getElementById('rb-0');
+    if(!btn) return;
+    const r = btn.getBoundingClientRect();
+    moveCursor(r.left+r.width/2, r.top+r.height/2);
+    btn.classList.add('highlight');
+  }, 1800);
+  setTimeout(()=>{ clickCursor(); }, 2100);
+  setTimeout(()=>{
+    document.getElementById('roster-modal').classList.add('show');
+    const cont = document.getElementById('rm-players');
+    cont.innerHTML='';
+    homeRoster.forEach((p,i)=>{
+      const d = document.createElement('div');
+      d.className='rm-player';
+      d.innerHTML=`<div class="rm-num">${p.num}</div><div class="rm-name">${p.name}</div>`;
+      cont.appendChild(d);
+      setTimeout(()=>d.classList.add('show'), i*120);
+    });
+  }, 2400);
+  setTimeout(()=>{ hideCursor(); document.getElementById('roster-modal').classList.remove('show'); }, 4500);
+}
+
+function runScene3(){
+  setTimeout(()=>document.getElementById('create-card').classList.add('show'),200);
+  setTimeout(()=>document.getElementById('active-games').classList.add('show'),500);
+
+  setTimeout(()=>{
+    const btn = document.getElementById('create-btn');
+    const r = btn.getBoundingClientRect();
+    moveCursor(r.left+r.width/2, r.top+r.height/2);
+    btn.classList.add('pulse');
+  },1600);
+  setTimeout(()=>{ clickCursor(); },1900);
+  setTimeout(()=>{
+    document.getElementById('create-btn').textContent='Creating…';
+    document.getElementById('rc-reveal').classList.add('show');
+  },2200);
+  setTimeout(()=>hideCursor(),3000);
+}
+
+let homeScore=51, awayScore=41;
+const logEntries=[];
+
+function addLog(name,stat){
+  const d=document.getElementById('live-log');
+  const e=document.createElement('div');
+  e.className='log-entry new';
+  e.innerHTML=`<strong>${name}</strong> — ${stat} at 04:22`;
+  d.insertBefore(e,d.firstChild);
+  setTimeout(()=>e.classList.remove('new'),600);
+  logEntries.unshift({name,stat});
+  if(d.children.length>4) d.removeChild(d.lastChild);
+}
+
+function flashBtn(id){
+  const b=document.getElementById(id);
+  if(!b) return;
+  b.classList.add('active-flash');
+  setTimeout(()=>b.classList.remove('active-flash'),200);
+}
+
+function runScene4(){
+  // build rosters
+  ['home','away'].forEach(side=>{
+    const ul=document.getElementById(`${side}-roster`);
+    ul.innerHTML='';
+    (side==='home'?homeRoster:awayRoster).forEach((p,i)=>{
+      const li=document.createElement('li');
+      li.className='roster-li';
+      li.id=`${side}-p${i}`;
+      li.innerHTML=`<span class="rnum">${p.num}</span>${p.name}`;
+      ul.appendChild(li);
+    });
+  });
+
+  const actions=[
+    { t:600,  fn:()=>{ const li=document.getElementById('home-p0'); const r=li.getBoundingClientRect(); moveCursor(r.left+r.width/2,r.top+r.height/2); }},
+    { t:900,  fn:()=>{ clickCursor(); document.getElementById('home-p0').classList.add('selected'); document.getElementById('sel-bar').textContent='Jordan Williams  #23  (home)'; document.getElementById('sel-bar').classList.add('on'); }},
+    { t:1400, fn:()=>{ const r=document.getElementById('btn-2').getBoundingClientRect(); moveCursor(r.left+r.width/2,r.top+r.height/2); }},
+    { t:1700, fn:()=>{ clickCursor(); flashBtn('btn-2'); homeScore+=2; const el=document.getElementById('home-score'); el.textContent=homeScore; el.classList.add('bump'); setTimeout(()=>el.classList.remove('bump'),200); addLog('Jordan Williams','+2 Points'); }},
+    { t:2300, fn:()=>{ const li=document.getElementById('home-p1'); const r=li.getBoundingClientRect(); moveCursor(r.left+r.width/2,r.top+r.height/2); }},
+    { t:2600, fn:()=>{ clickCursor(); document.getElementById('home-p0').classList.remove('selected'); document.getElementById('home-p1').classList.add('selected'); document.getElementById('sel-bar').textContent='Marcus Lee  #5  (home)'; }},
+    { t:3000, fn:()=>{ const r=document.getElementById('btn-ast').getBoundingClientRect(); moveCursor(r.left+r.width/2,r.top+r.height/2); }},
+    { t:3300, fn:()=>{ clickCursor(); flashBtn('btn-ast'); addLog('Marcus Lee','Assist'); }},
+    { t:3800, fn:()=>{ const r=document.getElementById('btn-reb').getBoundingClientRect(); moveCursor(r.left+r.width/2,r.top+r.height/2); }},
+    { t:4100, fn:()=>{ clickCursor(); flashBtn('btn-reb'); addLog('Marcus Lee','Rebound'); }},
+    { t:4700, fn:()=>{ const li=document.getElementById('away-p0'); const r=li.getBoundingClientRect(); moveCursor(r.left+r.width/2,r.top+r.height/2); }},
+    { t:5000, fn:()=>{ clickCursor(); document.getElementById('home-p1').classList.remove('selected'); document.getElementById('away-p0').classList.add('selected'); document.getElementById('sel-bar').textContent='Chris Okafor  #3  (away)'; }},
+    { t:5400, fn:()=>{ const r=document.getElementById('btn-3').getBoundingClientRect(); moveCursor(r.left+r.width/2,r.top+r.height/2); }},
+    { t:5700, fn:()=>{ clickCursor(); flashBtn('btn-3'); awayScore+=3; const el=document.getElementById('away-score'); el.textContent=awayScore; el.classList.add('bump'); setTimeout(()=>el.classList.remove('bump'),200); addLog('Chris Okafor','+3 Points'); }},
+    { t:6500, fn:()=>hideCursor() },
+  ];
+  actions.forEach(a=>setTimeout(a.fn, a.t));
+}
+
+function runScene5(){
+  const summaryItems=[
+    {val:'53',lbl:'PTS'},{val:'67%',lbl:'FG%'},{val:'20',lbl:'REB'},{val:'16',lbl:'AST'},{val:'6',lbl:'STL'},{val:'7',lbl:'TOV'}
+  ];
+  const row=document.getElementById('summary-row');
+  row.innerHTML='';
+  summaryItems.forEach((s,i)=>{
+    const d=document.createElement('div');
+    d.className='tscard';
+    d.id=`sc-${i}`;
+    d.innerHTML=`<div class="tscard-val">${s.val}</div><div class="tscard-lbl">${s.lbl}</div>`;
+    row.appendChild(d);
+    setTimeout(()=>d.classList.add('show'),i*100+200);
+  });
+  const tbody=document.getElementById('box-body');
+  tbody.innerHTML='';
+  boxData.forEach((p,i)=>{
+    const tr=document.createElement('tr');
+    tr.className='box-row';
+    tr.innerHTML=`<td style="font-weight:700">${p.name}</td><td style="color:var(--gold);font-weight:700">${p.pts}</td><td>${p.reb}</td><td>${p.ast}</td><td>${p.stl}</td><td>${p.blk}</td><td style="color:var(--red)">${p.tov}</td><td>${p.fg2}</td><td>${p.fg3}</td>`;
+    tbody.appendChild(tr);
+    setTimeout(()=>tr.classList.add('show'),i*150+600);
+  });
+}
+
+function runScene6(){
+  const wrap=document.getElementById('charts-wrap');
+  wrap.innerHTML='';
+
+  const charts=[
+    { title:'Score Breakdown', delay:100, content: buildBarChart([
+        {lbl:'2PT',val:30,max:40,color:'var(--gold)'},{lbl:'3PT',val:18,max:40,color:'var(--blue)'},{lbl:'FT',val:5,max:40,color:'var(--teal)'}
+      ]) },
+    { title:'Shooting Efficiency', delay:250, content: buildBarChart([
+        {lbl:'2PT%',val:62,max:100,color:'var(--gold)'},{lbl:'3PT%',val:40,max:100,color:'var(--blue)'},{lbl:'FT%',val:80,max:100,color:'var(--teal)'}
+      ]) },
+    { title:'Top Scorers', delay:400, content: buildHBarChart([
+        {name:'J. Williams',val:23,max:30},{name:'M. Lee',val:12,max:30},{name:'D. Clarke',val:8,max:30},{name:'A. Brooks',val:5,max:30},{name:'T. Nash',val:5,max:30}
+      ]) },
+    { title:'Team Stats', delay:550, content: buildHBarChart([
+        {name:'Rebounds',val:20,max:25},{name:'Assists',val:16,max:25},{name:'Steals',val:6,max:25},{name:'Blocks',val:4,max:25}
+      ],true) },
+  ];
+
+  charts.forEach(c=>{
+    const card=document.createElement('div');
+    card.className='chart-card';
+    card.innerHTML=`<div class="cc-title">${c.title}</div>${c.content}`;
+    wrap.appendChild(card);
+    setTimeout(()=>card.classList.add('show'), c.delay);
+  });
+
+  // animate main chart bars
+  setTimeout(()=>{
+    document.querySelectorAll('.bar').forEach(b=>b.style.height=b.dataset.h+'px');
+    document.querySelectorAll('.h-bar-fill').forEach(b=>b.style.width=b.dataset.w+'%');
+  }, 700);
+
+  // ── Player Comparison ──
+  const cmpData=[
+    {lbl:'PTS',p1:24,p2:12,max:28},
+    {lbl:'REB',p1:10,p2:7,max:12},
+    {lbl:'AST',p1:5,p2:3,max:8},
+    {lbl:'STL',p1:2,p2:1,max:4},
+    {lbl:'BLK',p1:1,p2:0,max:4},
+    {lbl:'TOV',p1:3,p2:2,max:4},
+  ];
+  const maxBarPx=130;
+  const gChart=document.getElementById('gbar-chart');
+  gChart.innerHTML='';
+  cmpData.forEach(s=>{
+    const g=document.createElement('div');
+    g.className='gbar-group';
+    g.innerHTML=`<div class="gbar-pair">
+      <div class="gbar" data-h="${Math.round(s.p1/s.max*maxBarPx)}" style="background:var(--gold)"></div>
+      <div class="gbar" data-h="${Math.round(s.p2/s.max*maxBarPx)}" style="background:var(--purple)"></div>
+    </div>
+    <div class="gbar-lbl">${s.lbl}</div>`;
+    gChart.appendChild(g);
+  });
+
+  setTimeout(()=>{
+    const sec=document.getElementById('cmp-section');
+    sec.classList.add('show');
+    // scroll to show it
+    sec.closest('.scene-body').scrollTo({top:9999,behavior:'smooth'});
+    setTimeout(()=>{
+      document.getElementById('cmp-stat-card').style.opacity='1';
+      document.getElementById('cmp-stat-card').style.transform='translateY(0)';
+      document.getElementById('cmp-stat-card').style.transition='all .4s ease';
+      document.querySelectorAll('.gbar').forEach(b=>b.style.height=b.dataset.h+'px');
+    },300);
+    setTimeout(()=>{
+      document.getElementById('cmp-radar-card').style.opacity='1';
+      document.getElementById('cmp-radar-card').style.transform='translateY(0)';
+      document.getElementById('cmp-radar-card').style.transition='all .4s ease';
+      document.getElementById('radar-p1').style.opacity='1';
+      document.getElementById('radar-p2').style.opacity='1';
+      ['rd1a','rd1b','rd1c','rd1d','rd1e','rd1f'].forEach(id=>{
+        const el=document.getElementById(id);
+        if(el) el.style.opacity='1';
+      });
+    },600);
+  },1800);
+}
+
+function buildBarChart(items){
+  const maxPx = 200;
+  return `<div class="bar-chart">${items.map(i=>`
+    <div class="bar-wrap">
+      <div class="bar-val">${i.val}${i.max===100?'%':''}</div>
+      <div class="bar" data-h="${Math.round((i.val/i.max)*maxPx)}" style="background:${i.color};height:0px"></div>
+      <div class="bar-lbl">${i.lbl}</div>
+    </div>`).join('')}</div>`;
+}
+function buildHBarChart(items, teal=false){
+  return `<div class="h-bar-chart">${items.map(i=>`
+    <div class="h-bar-row">
+      <div class="h-bar-name">${i.name}</div>
+      <div class="h-bar-track"><div class="h-bar-fill" data-w="${(i.val/i.max)*100}" style="background:${teal?'var(--teal)':'var(--gold)'};width:0"></div></div>
+      <div class="h-bar-val">${i.val}</div>
+    </div>`).join('')}</div>`;
+}
+
+function runScene7(){
+  const roster=[
+    {num:'23',name:'Jordan Williams',pts:23,reb:10,ast:5},
+    {num:'5',name:'Marcus Lee',pts:12,reb:7,ast:3},
+    {num:'11',name:'Devon Clarke',pts:8,reb:3,ast:8},
+    {num:'7',name:'Aidan Brooks',pts:5,reb:2,ast:1},
+    {num:'14',name:'Tyler Nash',pts:5,reb:4,ast:2},
+  ];
+  const cont=document.getElementById('coach-roster');
+  cont.innerHTML='';
+  roster.forEach((p,i)=>{
+    const d=document.createElement('div');
+    d.className='coach-pl';
+    d.style.opacity='0';
+    d.style.transition=`opacity .3s ease ${i*.1+.3}s`;
+    d.innerHTML=`<div class="cp-num">${p.num}</div><div><div class="cp-name">${p.name}</div><div class="cp-sub">${p.reb} REB · ${p.ast} AST</div></div><div class="cp-pts">${p.pts}</div>`;
+    cont.appendChild(d);
+  });
+  setTimeout(()=>{
+    document.getElementById('phone-frame').classList.add('show');
+    document.getElementById('coach-desc').classList.add('show');
+    cont.querySelectorAll('.coach-pl').forEach(p=>p.style.opacity='1');
+  },200);
+}
+
+function runScene8(){
+  // ── Populate sidebar ──
+  const sidebarPlayers=[
+    {num:'23',name:'Jordan Williams',team:'Raptors 905',init:'JW',active:true},
+    {num:'5', name:'Marcus Lee',     team:'Raptors 905',init:'ML',active:false},
+    {num:'11',name:'Devon Clarke',   team:'Raptors 905',init:'DC',active:false},
+    {num:'3', name:'Chris Okafor',   team:'Scar. Ballers',init:'CO',active:false},
+    {num:'21',name:'Dante Moore',    team:'Scar. Ballers',init:'DM',active:false},
+    {num:'8', name:'Jamal Reid',     team:'Scar. Ballers',init:'JR',active:false},
+  ];
+  const ul=document.getElementById('pp-player-list');
+  ul.innerHTML='';
+  sidebarPlayers.forEach((p,i)=>{
+    const li=document.createElement('li');
+    li.className='pp-player-item'+(p.active?' active':'');
+    li.innerHTML=`<div class="pp-av" style="width:34px;height:34px;font-size:13px">${p.init}</div>
+      <div style="min-width:0">
+        <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name}</div>
+        <div style="font-size:10px;color:var(--t3)">#${p.num} · ${p.team}</div>
+      </div>`;
+    ul.appendChild(li);
+    setTimeout(()=>li.classList.add('show'), i*90+100);
+  });
+
+  setTimeout(()=>{
+    document.getElementById('profile-hero').classList.add('show');
+    animateCount('pp-pts',24,800);
+    animateCount('pp-reb',10,900);
+    animateCount('pp-ast',5,700);
+    animateCountPct('pp-fg',57,900);
+  },300);
+
+  // ── Stat cards row ──
+  const statCards=[
+    {val:24,lbl:'Points',color:'var(--gold)'},
+    {val:10,lbl:'Rebounds',color:'var(--teal)'},
+    {val:5,lbl:'Assists',color:'var(--blue)'},
+    {val:2,lbl:'Steals',color:'var(--grn)'},
+    {val:1,lbl:'Blocks',color:'var(--purple)'},
+    {val:3,lbl:'Turnovers',color:'var(--red)'},
+  ];
+  const scRow=document.getElementById('sc-row-demo');
+  scRow.innerHTML='';
+  statCards.forEach((s,i)=>{
+    const d=document.createElement('div');
+    d.className='sc-card-d';
+    d.innerHTML=`<div class="sc-val-d" style="color:${s.color}" id="scd-${i}">0</div><div class="sc-lbl-d">${s.lbl}</div>`;
+    scRow.appendChild(d);
+    setTimeout(()=>{
+      d.classList.add('show');
+      animateCount(`scd-${i}`, s.val, 600);
+    }, i*80+400);
+  });
+
+  // ── Chart cards ──
+  const chartsData=[
+    { title:'Shot Efficiency', delay:900, content:`
+      <div class="bar-chart-bottom" style="flex:none;height:160px">
+        ${[{lbl:'2PT%',v:'62%',px:96,c:'var(--gold)'},{lbl:'3PT%',v:'40%',px:62,c:'var(--blue)'},{lbl:'FT%',v:'80%',px:124,c:'var(--teal)'}].map(x=>`
+        <div class="bar-wrap-b">
+          <div class="bar-val" style="font-size:12px;font-weight:700;color:var(--t2)">${x.v}</div>
+          <div class="bar-space">
+            <div class="bar-b" data-h="${x.px}" style="background:${x.c}"></div>
+          </div>
+          <div class="bar-lbl" style="font-size:10px;color:var(--t3)">${x.lbl}</div>
+        </div>`).join('')}
+      </div>` },
+    { title:'Scoring Split', delay:1100, content:`
+      <div style="flex:1;display:flex;flex-direction:column;gap:14px;justify-content:center;padding:8px 0">
+        ${[{lbl:'2-Pointers',v:'46 pts',pct:63,c:'var(--gold)'},{lbl:'3-Pointers',v:'18 pts',pct:25,c:'var(--blue)'},{lbl:'Free Throws',v:'8 pts',pct:11,c:'var(--teal)'}].map(x=>`
+        <div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+            <span style="font-size:12px;color:var(--t2);font-weight:600">${x.lbl}</span>
+            <span style="font-size:12px;color:var(--gold);font-weight:700">${x.v}</span>
+          </div>
+          <div style="height:10px;background:var(--bg3);border-radius:99px;overflow:hidden">
+            <div class="split-bar" data-w="${x.pct}" style="height:100%;width:0%;background:${x.c};border-radius:99px;transition:width 1s ease"></div>
+          </div>
+        </div>`).join('')}
+      </div>` },
+    { title:'Performance Radar', delay:1300, content:`
+      <div style="flex:1;display:flex;align-items:center;justify-content:center">
+        <svg viewBox="0 0 200 200" width="190" height="190">
+          <polygon points="100,15 170,57 170,143 100,185 30,143 30,57" fill="none" stroke="var(--line)" stroke-width="1.5"/>
+          <polygon points="100,45 148,72 148,128 100,155 52,128 52,72" fill="none" stroke="var(--line)" stroke-width="1"/>
+          <polygon points="100,75 130,92 130,118 100,130 70,118 70,92" fill="none" stroke="var(--line)" stroke-width="1"/>
+          <polygon points="100,22 162,60 155,135 100,175 45,135 38,60" fill="rgba(245,197,24,0.15)" stroke="var(--gold)" stroke-width="2"/>
+          <circle cx="100" cy="22" r="4" fill="var(--gold)"/>
+          <circle cx="162" cy="60" r="4" fill="var(--gold)"/>
+          <circle cx="155" cy="135" r="4" fill="var(--gold)"/>
+          <circle cx="100" cy="175" r="4" fill="var(--gold)"/>
+          <circle cx="45" cy="135" r="4" fill="var(--gold)"/>
+          <circle cx="38" cy="60" r="4" fill="var(--gold)"/>
+          <text x="100" y="9" text-anchor="middle" fill="var(--t2)" font-size="10">Scoring</text>
+          <text x="176" y="60" text-anchor="start" fill="var(--t2)" font-size="10">Reb</text>
+          <text x="172" y="142" text-anchor="start" fill="var(--t2)" font-size="10">Play</text>
+          <text x="100" y="199" text-anchor="middle" fill="var(--t2)" font-size="10">Defense</text>
+          <text x="24" y="142" text-anchor="end" fill="var(--t2)" font-size="10">Eff</text>
+          <text x="28" y="60" text-anchor="end" fill="var(--t2)" font-size="10">FT</text>
+        </svg>
+      </div>`},
+  ];
+
+  const cont=document.getElementById('profile-charts');
+  cont.innerHTML='';
+  chartsData.forEach(c=>{
+    const card=document.createElement('div');
+    card.className='pc-card';
+    card.innerHTML=`<div class="pc-title">${c.title}</div>${c.content}`;
+    cont.appendChild(card);
+    setTimeout(()=>{
+      card.classList.add('show');
+      card.querySelectorAll('.bar-b').forEach(b=>b.style.height=b.dataset.h+'px');
+      card.querySelectorAll('.split-bar').forEach(b=>b.style.width=b.dataset.w+'%');
+    }, c.delay);
+  });
+}
+
+function runScene9(){
+  setTimeout(()=>{
+    document.getElementById('outro-logo').classList.add('show');
+    document.getElementById('outro-tagline').classList.add('show');
+    document.getElementById('outro-cta').classList.add('show');
+    document.getElementById('outro-link').classList.add('show');
+    document.getElementById('replay').style.display='block';
+  },300);
+}
+
+function animateCount(id,target,dur){
+  const el=document.getElementById(id);
+  const start=Date.now();
+  const tick=()=>{
+    const p=Math.min(1,(Date.now()-start)/dur);
+    el.textContent=Math.round(p*target);
+    if(p<1) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+function animateCountPct(id,target,dur){
+  const el=document.getElementById(id);
+  const start=Date.now();
+  const tick=()=>{
+    const p=Math.min(1,(Date.now()-start)/dur);
+    el.textContent=Math.round(p*target)+'%';
+    if(p<1) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
+const sceneRunners = [null, runScene2, runScene3, runScene4, runScene5, runScene6, runScene7, runScene8, runScene9];
+
+function goToScene(idx){
+  // hide all
+  SCENES.forEach((_,i)=>{
+    document.getElementById(SCENES[i].id).classList.remove('active');
+  });
+  // show current
+  const s=SCENES[idx];
+  document.getElementById(s.id).classList.add('active');
+  setCaption(s.step, s.text, s.sub);
+  setDot(idx);
+  currentScene=idx;
+
+  // run scene logic
+  if(sceneRunners[idx]) sceneRunners[idx]();
+
+  // schedule next
+  clearTimeout(sceneTimer);
+  if(idx < SCENES.length-1){
+    sceneTimer=setTimeout(()=>goToScene(idx+1), s.dur);
+  }
+}
+
+function startDemo(){
+  clearTimeout(sceneTimer);
+  clearInterval(progressTimer);
+  homeScore=51; awayScore=41;
+  document.getElementById('progress-bar').style.width='0%';
+  document.getElementById('replay').style.display='none';
+
+  // reset outro
+  ['outro-logo','outro-tagline','outro-cta','outro-link'].forEach(id=>{
+    document.getElementById(id).classList.remove('show');
+  });
+
+  startProgress(TOTAL_DUR);
+  goToScene(0);
+}
+
+// kick off
+startDemo();
+</script>
+</body>
+</html>
