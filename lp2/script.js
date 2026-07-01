@@ -6,6 +6,9 @@
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
+  getAuth, onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import {
   getFirestore, doc, getDoc, updateDoc, onSnapshot,
   collection, addDoc, getDocs, deleteDoc, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -18,8 +21,9 @@ const FB = {
   messagingSenderId: "695414880372",
   appId: "1:695414880372:web:bd07071a02390219bd3921"
 };
-const app = initializeApp(FB);
-const db  = getFirestore(app);
+const app  = initializeApp(FB);
+const auth = getAuth(app);
+const db   = getFirestore(app);
 
 // ── Room ──
 const params   = new URLSearchParams(window.location.search);
@@ -98,6 +102,36 @@ function undoLastStat() {
   scheduleSave(); showToast("Last stat undone");
 }
 
+// ── Auth: reveal scorekeeper controls only for admin/stats ──
+onAuthStateChanged(auth, async (user) => {
+  if (!user) { applyReadOnlyMode(); return; }
+  try {
+    const snap = await getDoc(doc(db, "users", user.uid));
+    const role = snap.exists() ? snap.data().role : null;
+    if (role === "admin" || role === "stats") {
+      applyScorekeeper();
+    } else {
+      applyReadOnlyMode();
+    }
+  } catch (_) {
+    applyReadOnlyMode();
+  }
+});
+
+function applyScorekeeper() {
+  el("scorekeeper-controls")?.style.setProperty("display", "block");
+  el("scorekeeper-stats-controls")?.style.setProperty("display", "block");
+  document.querySelectorAll(".scorekeeper-only").forEach(b => b.style.display = "block");
+}
+
+function applyReadOnlyMode() {
+  el("nav-live-badge")?.style.setProperty("display", "block");
+  document.querySelectorAll(".scorekeeper-only").forEach(b => b.style.display = "none");
+  document.querySelectorAll("#home-roster-hdr, #away-roster-hdr").forEach(h => {
+    if (h) h.textContent = "ON COURT";
+  });
+}
+
 // ── Init ──
 document.addEventListener("DOMContentLoaded", async () => {
   if (!ROOM_CODE) {
@@ -126,7 +160,35 @@ document.addEventListener("DOMContentLoaded", async () => {
   toggleView("scoreboard"); showTab("home");
 
   // Apply initial data
-  applyRemoteData(snap.data());
+  const roomData = snap.data();
+  applyRemoteData(roomData);
+
+  // If either team's roster is missing/empty, pull the latest from Firestore
+  // (happens when game was created before players were added to the team roster)
+  const needsRosterRefresh =
+    !roomData.homeTeam?.roster?.length || !roomData.awayTeam?.roster?.length;
+
+  if (needsRosterRefresh) {
+    const patches = {};
+    for (const side of ["home", "away"]) {
+      const team = side === "home" ? roomData.homeTeam : roomData.awayTeam;
+      if (team?.id && !team.roster?.length) {
+        try {
+          const tSnap = await getDoc(doc(db, "teams", team.id));
+          if (tSnap.exists()) {
+            const fresh = { ...team, ...tSnap.data() };
+            if (side === "home") { homeTeam = fresh; patches.homeTeam = fresh; }
+            else                 { awayTeam = fresh; patches.awayTeam = fresh; }
+            if (fresh.roster?.length) loadRoster(side, fresh.roster);
+          }
+        } catch (_) {}
+      }
+    }
+    // Persist fresh rosters into the room so future loads don't repeat this
+    if (Object.keys(patches).length) {
+      try { await updateDoc(roomRef, patches); } catch (_) {}
+    }
+  }
 
   // Subscribe to real-time updates
   unsubscribe = onSnapshot(roomRef, (docSnap) => {
@@ -475,9 +537,9 @@ function initCharts() {
   shotVolumeChart = mk("shotVolumeChart", { type:"bar", data:{ labels:["2PT Made","2PT Att","3PT Made","3PT Att","FT Made","FT Att"], datasets:[{label:"Home",data:[0,0,0,0,0,0],backgroundColor:C.gold+"cc",borderRadius:4,barPercentage:.6},{label:"Away",data:[0,0,0,0,0,0],backgroundColor:C.blue+"cc",borderRadius:4,barPercentage:.6}] }, options:{ responsive:true,maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:catAxis,y:{...intYAxis,suggestedMax:10}} } });
   el("shotVolumeChart")?.parentElement.insertAdjacentHTML("afterbegin", makeLegend([{color:C.gold,label:"Home"},{color:C.blue,label:"Away"}]));
 
-  playerCompareChart = mk("playerCompareChart", { type:"bar", data:{ labels:["PTS","REB","AST","STL","BLK","TOV"], datasets:[{label:"P1",data:[0,0,0,0,0,0],backgroundColor:C.gold,borderRadius:4,barPercentage:.65},{label:"P2",data:[0,0,0,0,0,0],backgroundColor:C.purple,borderRadius:4,barPercentage:.65}] }, options:{ responsive:true,maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:catAxis,y:{...intYAxis,suggestedMax:10}} } });
+  playerCompareChart = mk("playerCompareChart", { type:"bar", data:{ labels:["PTS","REB","AST","STL","BLK","TOV"], datasets:[{label:"Player 1",data:[0,0,0,0,0,0],backgroundColor:C.gold,borderRadius:4,barPercentage:.65},{label:"Player 2",data:[0,0,0,0,0,0],backgroundColor:C.purple,borderRadius:4,barPercentage:.65}] }, options:{ responsive:true,maintainAspectRatio:false, plugins:{legend:{display:true,labels:{color:C.t2,font:{size:12},usePointStyle:true,pointStyle:"rect"}}}, scales:{x:catAxis,y:{...intYAxis,suggestedMax:10}} } });
 
-  playerRadarChart = mk("playerRadarChart", { type:"radar", data:{ labels:["Scoring","Rebounding","Playmaking","Defense","Efficiency","Hustle"], datasets:[{label:"P1",data:[0,0,0,0,0,0],borderColor:C.gold,backgroundColor:C.gold+"22",pointBackgroundColor:C.gold,pointRadius:3},{label:"P2",data:[0,0,0,0,0,0],borderColor:C.purple,backgroundColor:C.purple+"22",pointBackgroundColor:C.purple,pointRadius:3}] }, options:{ responsive:true,maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{r:{backgroundColor:"transparent",grid:{color:C.line},pointLabels:{color:C.t2,font:{size:11}},ticks:{display:false},angleLines:{color:C.line}}} } });
+  playerRadarChart = mk("playerRadarChart", { type:"radar", data:{ labels:["Scoring","Rebounding","Playmaking","Defense","Efficiency","Steals"], datasets:[{label:"Player 1",data:[0,0,0,0,0,0],borderColor:C.gold,backgroundColor:C.gold+"22",pointBackgroundColor:C.gold,pointRadius:3},{label:"Player 2",data:[0,0,0,0,0,0],borderColor:C.purple,backgroundColor:C.purple+"22",pointBackgroundColor:C.purple,pointRadius:3}] }, options:{ responsive:true,maintainAspectRatio:false, plugins:{legend:{display:true,labels:{color:C.t2,font:{size:12}}}}, scales:{r:{backgroundColor:"transparent",grid:{color:C.line},pointLabels:{color:C.t2,font:{size:11}},ticks:{display:false},angleLines:{color:C.line}}} } });
 
   topScorersChart = mk("topScorersChart", { type:"bar", data:{ labels:["—"], datasets:[{data:[0],backgroundColor:C.gold,borderRadius:4,barPercentage:.6}] }, options:{ indexAxis:"y",responsive:true,maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{...intXAxis,suggestedMax:10},y:catAxisY} } });
 
@@ -528,8 +590,9 @@ function populateCompareDropdowns() {
     const sel = el(id); if (!sel) return;
     sel.innerHTML = `<option value="">Select Player</option>`;
     Object.keys(playerStats).forEach(key => {
-      const name = key.split(" - ")[1] || key;
-      sel.insertAdjacentHTML("beforeend", `<option value="${key}">${name}</option>`);
+      const [side, nameNum] = key.split(" - ");
+      const label = nameNum ? `${nameNum} (${side})` : key;
+      sel.insertAdjacentHTML("beforeend", `<option value="${key}">${label}</option>`);
     });
   });
   if (saved1) el("compare-p1").value = saved1;
@@ -541,19 +604,20 @@ function updatePlayerComparison() {
   const k1 = el("compare-p1")?.value, k2 = el("compare-p2")?.value;
   const s1 = k1 ? (playerStats[k1]||{}) : {};
   const s2 = k2 ? (playerStats[k2]||{}) : {};
-  const n1 = k1 ? (k1.split(" - ")[1]?.split(" #")[0]||"P1") : "Player 1";
-  const n2 = k2 ? (k2.split(" - ")[1]?.split(" #")[0]||"P2") : "Player 2";
+  const n1 = k1 ? (k1.split(" - ")[1]?.split(" #")[0]||"Player 1") : "Player 1";
+  const n2 = k2 ? (k2.split(" - ")[1]?.split(" #")[0]||"Player 2") : "Player 2";
   playerCompareChart.data.datasets[0].label = n1;
   playerCompareChart.data.datasets[1].label = n2;
   playerCompareChart.data.datasets[0].data = [s1.points||0,s1.rebounds||0,s1.assists||0,s1.steals||0,s1.blocks||0,s1.turnovers||0];
   playerCompareChart.data.datasets[1].data = [s2.points||0,s2.rebounds||0,s2.assists||0,s2.steals||0,s2.blocks||0,s2.turnovers||0];
   playerCompareChart.update("none");
   const norm = (v,max) => max>0 ? Math.min(10,parseFloat(((v/max)*10).toFixed(1))) : 0;
-  const mp = Math.max(1,s1.points||0,s2.points||0);
-  const mr = Math.max(1,s1.rebounds||0,s2.rebounds||0);
-  const ma = Math.max(1,s1.assists||0,s2.assists||0);
-  playerRadarChart.data.datasets[0].data = [norm(s1.points||0,mp),norm(s1.rebounds||0,mr),norm(s1.assists||0,ma),norm((s1.steals||0)+(s1.blocks||0),Math.max(1,(s1.steals||0)+(s1.blocks||0),(s2.steals||0)+(s2.blocks||0))),(()=>{const m=(s1.shotsMade?.twoPoint||0)+(s1.shotsMade?.threePoint||0),a=(s1.shotsAttempted?.twoPoint||0)+(s1.shotsAttempted?.threePoint||0);return a>0?(m/a)*10:0;})(),norm(s1.assists||0,ma)];
-  playerRadarChart.data.datasets[1].data = [norm(s2.points||0,mp),norm(s2.rebounds||0,mr),norm(s2.assists||0,ma),norm((s2.steals||0)+(s2.blocks||0),Math.max(1,(s1.steals||0)+(s1.blocks||0),(s2.steals||0)+(s2.blocks||0))),(()=>{const m=(s2.shotsMade?.twoPoint||0)+(s2.shotsMade?.threePoint||0),a=(s2.shotsAttempted?.twoPoint||0)+(s2.shotsAttempted?.threePoint||0);return a>0?(m/a)*10:0;})(),norm(s2.assists||0,ma)];
+  const mp   = Math.max(1,s1.points||0,s2.points||0);
+  const mr   = Math.max(1,s1.rebounds||0,s2.rebounds||0);
+  const ma   = Math.max(1,s1.assists||0,s2.assists||0);
+  const mstl = Math.max(1,s1.steals||0,s2.steals||0);
+  playerRadarChart.data.datasets[0].data = [norm(s1.points||0,mp),norm(s1.rebounds||0,mr),norm(s1.assists||0,ma),norm((s1.steals||0)+(s1.blocks||0),Math.max(1,(s1.steals||0)+(s1.blocks||0),(s2.steals||0)+(s2.blocks||0))),(()=>{const m=(s1.shotsMade?.twoPoint||0)+(s1.shotsMade?.threePoint||0),a=(s1.shotsAttempted?.twoPoint||0)+(s1.shotsAttempted?.threePoint||0);return a>0?(m/a)*10:0;})(),norm(s1.steals||0,mstl)];
+  playerRadarChart.data.datasets[1].data = [norm(s2.points||0,mp),norm(s2.rebounds||0,mr),norm(s2.assists||0,ma),norm((s2.steals||0)+(s2.blocks||0),Math.max(1,(s1.steals||0)+(s1.blocks||0),(s2.steals||0)+(s2.blocks||0))),(()=>{const m=(s2.shotsMade?.twoPoint||0)+(s2.shotsMade?.threePoint||0),a=(s2.shotsAttempted?.twoPoint||0)+(s2.shotsAttempted?.threePoint||0);return a>0?(m/a)*10:0;})(),norm(s2.steals||0,mstl)];
   playerRadarChart.update("none");
 }
 
@@ -757,48 +821,3 @@ async function endGame() {
 window.confirmEndGame = confirmEndGame;
 window.endGame = endGame;
 
-// ── Share Coach Links ──
-function openShareModal() {
-  if (!ROOM_CODE) { showToast("No active room"); return; }
-
-  const base = window.location.href.split("game.html")[0];
-  const homeUrl = `${base}coach.html?room=${ROOM_CODE}&team=home`;
-  const awayUrl = `${base}coach.html?room=${ROOM_CODE}&team=away`;
-
-  el("share-home-name").textContent = homeTeam?.name || "Home Team";
-  el("share-away-name").textContent = awayTeam?.name || "Away Team";
-  el("share-home-url").textContent  = homeUrl;
-  el("share-away-url").textContent  = awayUrl;
-
-  el("share-modal").style.display = "flex";
-}
-
-function closeShareModal() {
-  el("share-modal").style.display = "none";
-}
-
-function copyLink(side) {
-  const urlEl = el(`share-${side}-url`);
-  if (!urlEl) return;
-  navigator.clipboard.writeText(urlEl.textContent).then(() => {
-    showToast(`${side === "home" ? "Home" : "Away"} coach link copied!`);
-  }).catch(() => {
-    // fallback for non-https
-    const ta = document.createElement("textarea");
-    ta.value = urlEl.textContent;
-    document.body.appendChild(ta);
-    ta.select(); document.execCommand("copy");
-    document.body.removeChild(ta);
-    showToast("Link copied!");
-  });
-}
-
-function openLink(side) {
-  const urlEl = el(`share-${side}-url`);
-  if (urlEl) window.open(urlEl.textContent, "_blank");
-}
-
-window.openShareModal  = openShareModal;
-window.closeShareModal = closeShareModal;
-window.copyLink        = copyLink;
-window.openLink        = openLink;

@@ -1,0 +1,98 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helpers ──
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function role() {
+      return userDoc().role;
+    }
+    function isAdmin() {
+      return isSignedIn() && role() == "admin";
+    }
+    function isStats() {
+      return isSignedIn() && role() == "stats";
+    }
+    function isCoach() {
+      return isSignedIn() && role() == "coach";
+    }
+    function isCoachOf(teamId) {
+      return isCoach() && userDoc().teamId == teamId;
+    }
+
+    // ── Users ──
+    // Any signed-in user can read/create their own profile.
+    // Admin can read all profiles (needed to find coaches when executing trades).
+    // Role cannot be self-escalated via update.
+    match /users/{uid} {
+      allow read:   if isSignedIn() && (request.auth.uid == uid || isAdmin());
+      allow create: if isSignedIn() && request.auth.uid == uid;
+      allow update: if isSignedIn() && (
+                      // Owner can update own profile but cannot change their role
+                      (request.auth.uid == uid && request.resource.data.role == resource.data.role) ||
+                      // Admin can change role, teamId, and division for any user
+                      (isAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['teamId', 'division', 'role']))
+                    );
+      allow delete: if false;
+    }
+
+    // ── Teams ──
+    // Public read — team names needed on signup page before auth exists.
+    // Roster data is not sensitive for a youth league context.
+    // Writes are still fully role-protected.
+    match /teams/{teamId} {
+      allow read:   if true;
+      allow create: if isAdmin();
+      allow update: if isAdmin() || isCoachOf(teamId);
+      allow delete: if isAdmin();
+    }
+
+    // ── Notifications ──
+    // Only admin can create (trade events). Coach can read/mark-read their own.
+    match /notifications/{notifId} {
+      allow read:   if isSignedIn() && request.auth.uid == resource.data.toUid;
+      allow create: if isAdmin();
+      allow update: if isSignedIn() && request.auth.uid == resource.data.toUid
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+      allow delete: if false;
+    }
+
+    // ── Game Rooms ──
+    // Admin + Stats: create & update only — deletion is permanently blocked to
+    // prevent player-stat history from being destroyed. Archive via status field instead.
+    // Public read — scoreboards are viewable by anyone with the room code (coaches, parents).
+    match /gameRooms/{roomCode} {
+      allow read:   if true;
+      allow create: if isAdmin() || isStats();
+      allow update: if isAdmin() || isStats();
+      allow delete: if false;
+
+      match /snapshots/{snapId} {
+        allow read:   if true;
+        allow create: if isAdmin() || isStats();
+        allow update: if isAdmin() || isStats();
+        allow delete: if false;
+      }
+    }
+
+    // ── Usernames ──
+    // Anyone can read to check availability during signup.
+    // Only the owning user can create (claims their username).
+    match /usernames/{username} {
+      allow read:   if true;
+      allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    // ── Legacy coaches collection (kept for backward compat) ──
+    match /coaches/{uid} {
+      allow read:  if isSignedIn() && request.auth.uid == uid;
+      allow write: if false;
+    }
+  }
+}

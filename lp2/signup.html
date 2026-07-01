@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign Up · Sport Performance Stats</title>
+  <link rel="icon" href="logo.svg">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="auth.css">
+</head>
+<body>
+
+  <div class="auth-page">
+    <div class="auth-card wide">
+      <img src="logo.svg" alt="Sport Performance Stats" class="auth-logo">
+      <h1 class="auth-title">Create Account</h1>
+      <p class="auth-sub">Choose your role to get the right access.</p>
+
+      <div class="auth-fields">
+
+        <!-- Name, Username, Email, Password -->
+        <div class="field-group">
+          <label class="field-label">Full Name</label>
+          <input type="text" id="su-name" placeholder="Your full name" autocomplete="name">
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Username</label>
+          <div class="username-wrap">
+            <span class="username-at">@</span>
+            <input type="text" id="su-username" placeholder="yourhandle" autocomplete="off" spellcheck="false">
+          </div>
+          <span class="field-hint" id="username-hint">3–20 characters. Letters, numbers, underscores only.</span>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Email</label>
+          <input type="email" id="su-email" placeholder="your@email.com" autocomplete="email">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Password</label>
+          <input type="password" id="su-password" placeholder="At least 6 characters" autocomplete="new-password">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Confirm Password</label>
+          <input type="password" id="su-confirm" placeholder="Repeat password" autocomplete="new-password">
+        </div>
+
+        <!-- Role selector — Admin is NOT available here -->
+        <div class="field-group">
+          <label class="field-label">I am a…</label>
+          <div class="role-grid" id="role-grid">
+
+            <button type="button" class="role-btn selected" data-role="stats">
+              <span class="role-icon">📊</span>
+              <div>
+                <div class="role-name">Scorekeeper</div>
+                <div class="role-desc">Run live games &amp; track stats. View all teams</div>
+              </div>
+            </button>
+
+            <button type="button" class="role-btn" data-role="coach">
+              <span class="role-icon">🏀</span>
+              <div>
+                <div class="role-name">Coach</div>
+                <div class="role-desc">View your team's stats &amp; player profiles only</div>
+              </div>
+            </button>
+
+          </div>
+          <span class="field-hint" style="margin-top:6px">
+            Need admin access? Contact your administrator.
+          </span>
+        </div>
+
+        <!-- Team selection (coaches only) -->
+        <div class="field-group team-field" id="team-field">
+          <label class="field-label">Your Team</label>
+          <select id="su-team">
+            <option value="">Loading teams…</option>
+          </select>
+          <span class="field-hint">You'll only see this team's stats after signing in.</span>
+        </div>
+
+      </div>
+
+      <button class="auth-submit" id="signup-btn">Create Account</button>
+
+      <p class="auth-error" id="signup-error"></p>
+
+      <hr class="auth-divider">
+
+      <p class="auth-footer">
+        Already have an account? <a href="login.html">Sign in →</a>
+      </p>
+    </div>
+  </div>
+
+  <script type="module" src="signup.js"></script>
+</body>
+</html>

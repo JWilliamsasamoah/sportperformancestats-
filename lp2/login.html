@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In · Sport Performance Stats</title>
+  <link rel="icon" href="logo.svg">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="auth.css">
+</head>
+<body>
+
+  <div class="auth-page">
+    <div class="auth-card">
+      <img src="logo.svg" alt="Sport Performance Stats" class="auth-logo">
+      <h1 class="auth-title">Welcome Back</h1>
+      <p class="auth-sub">Sign in to access your dashboard.</p>
+
+      <div class="auth-fields">
+        <div class="field-group">
+          <label class="field-label">Email</label>
+          <input type="email" id="login-email" placeholder="your@email.com" autocomplete="email">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Password</label>
+          <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password">
+          <a href="#" id="forgot-link" class="forgot-link">Forgot password?</a>
+        </div>
+      </div>
+
+      <!-- Forgot password panel (hidden by default) -->
+      <div id="reset-panel" class="reset-panel" style="display:none">
+        <p class="reset-label">Enter your email and we'll send a reset link.</p>
+        <div class="reset-row">
+          <input type="email" id="reset-email" placeholder="your@email.com">
+          <button id="reset-btn" class="reset-btn">Send Reset Email</button>
+        </div>
+        <a href="#" id="cancel-reset" class="cancel-reset">← Back to login</a>
+      </div>
+
+      <button class="auth-submit" id="login-btn">Sign In</button>
+
+      <p class="auth-error" id="login-error"></p>
+      <p class="auth-ok"    id="login-ok"></p>
+
+      <hr class="auth-divider">
+
+      <p class="auth-footer">
+        Don't have an account? <a href="signup.html">Sign up here →</a>
+      </p>
+    </div>
+  </div>
+
+  <script type="module" src="login.js"></script>
+</body>
+</html>

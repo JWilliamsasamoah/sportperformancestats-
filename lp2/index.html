@@ -163,6 +163,34 @@
     .mock-btn.blue { background: rgba(59,130,246,0.15); color: var(--blue); }
     .mock-btn.teal { background: rgba(20,184,166,0.15); color: var(--teal); }
 
+    /* ── ROLE CARDS ── */
+    .roles { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+    .role-card {
+      background: var(--bg1); border: 1px solid var(--line); border-radius: 16px; padding: 30px 26px;
+    }
+    .role-card-header {
+      display: flex; align-items: center; gap: 12px; margin-bottom: 20px;
+    }
+    .role-tag {
+      font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+      padding: 5px 12px; border-radius: 99px;
+    }
+    .role-tag.scorekeeper { background: rgba(245,197,24,0.12); color: var(--gold); border: 1px solid rgba(245,197,24,0.25); }
+    .role-tag.coach       { background: rgba(59,130,246,0.12);  color: var(--blue); border: 1px solid rgba(59,130,246,0.25); }
+    .role-steps { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+    .role-step {
+      display: flex; gap: 12px; align-items: flex-start;
+    }
+    .role-step-num {
+      flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700;
+    }
+    .role-step-num.gold   { background: rgba(245,197,24,0.15); color: var(--gold); }
+    .role-step-num.blue   { background: rgba(59,130,246,0.15);  color: var(--blue); }
+    .role-step-text { font-size: 13px; color: var(--t2); line-height: 1.55; }
+    .role-step-text strong { color: var(--t1); }
+
     /* ── CTA BANNER ── */
     .cta-banner {
       background: linear-gradient(135deg, rgba(245,197,24,0.1) 0%, rgba(59,130,246,0.06) 100%);
@@ -204,7 +232,7 @@
 <div class="hero">
   <div class="hero-badge"> Real-Time Basketball Analytics</div>
   <h1>REAL-TIME BASKETBALL<br><span>STATS PLATFORM</span></h1>
-  <p>Track live game stats, view player profiles, and share instant coach views — all from your phone or tablet.</p>
+  <p>Track live game stats, view player profiles, and monitor real-time leaderboards — all from your phone or tablet.</p>
   <div class="hero-btns">
     <a href="lobby.html" class="btn-primary">Get Started</a>
     <a href="#how-it-works" class="btn-secondary">How It Works ↓</a>
@@ -262,13 +290,6 @@
 
     <div class="step">
       <div class="step-num">04</div>
-      <div class="step-icon">📲</div>
-      <h3>Share Coach Links</h3>
-      <p>Tap <strong>Coach Links</strong> in the nav. Each coach gets a personal link with a live read-only view of their team.</p>
-    </div>
-
-    <div class="step">
-      <div class="step-num">05</div>
       <div class="step-icon"></div>
       <h3>Analyze & Export</h3>
       <p>View <strong>Charts</strong> and the <strong>Box Score</strong> mid-game or after. Export the full stat sheet to Excel anytime.</p>
@@ -332,10 +353,10 @@
     </div>
 
     <div class="feat">
-      <div class="feat-icon blue">📲</div>
+      <div class="feat-icon blue">👁</div>
       <div>
         <h3>Coach View</h3>
-        <p>Shareable read-only link for each coach. Shows live roster, player stats, charts and play log — no login needed.</p>
+        <p>Coaches join any game using the room code. Get a live read-only view of both teams — roster, stats, charts, and play log.</p>
       </div>
     </div>
 
@@ -369,6 +390,73 @@
         <h3>Export to Excel</h3>
         <p>Download the full box score as an XLSX file at any point. Separate sheets for home and away teams.</p>
       </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ROLE INSTRUCTIONS -->
+<section style="border-top: 1px solid var(--line); padding-top: 80px;">
+  <div class="section-label">By Role</div>
+  <div class="section-title">HOW TO USE</div>
+  <div class="section-sub">Different roles, different views — here's what each person needs to do.</div>
+
+  <div class="roles">
+
+    <div class="role-card">
+      <div class="role-card-header">
+        <span class="role-tag scorekeeper">Scorekeeper</span>
+      </div>
+      <ol class="role-steps">
+        <li class="role-step">
+          <div class="role-step-num gold">1</div>
+          <div class="role-step-text">Go to <strong>Teams &amp; Players</strong> and build your rosters — add team names, player names, and jersey numbers.</div>
+        </li>
+        <li class="role-step">
+          <div class="role-step-num gold">2</div>
+          <div class="role-step-text">Open the <strong>Lobby</strong>, select the home and away teams, and hit <em>Create Game</em> to get your room code.</div>
+        </li>
+        <li class="role-step">
+          <div class="role-step-num gold">3</div>
+          <div class="role-step-text">Log in using your scorekeeper credentials when prompted. The stat controls will unlock.</div>
+        </li>
+        <li class="role-step">
+          <div class="role-step-num gold">4</div>
+          <div class="role-step-text">Tap a player on the roster, then tap a stat button — <strong>+2</strong>, <strong>+3</strong>, <strong>FT</strong>, <strong>REB</strong>, <strong>AST</strong>, etc. Use <em>Undo</em> to correct mistakes.</div>
+        </li>
+        <li class="role-step">
+          <div class="role-step-num gold">5</div>
+          <div class="role-step-text">When the game is done, hit <strong>End Game</strong>. Export the box score to Excel from the <em>Box Score</em> tab.</div>
+        </li>
+      </ol>
+    </div>
+
+    <div class="role-card">
+      <div class="role-card-header">
+        <span class="role-tag coach">Coach</span>
+      </div>
+      <ol class="role-steps">
+        <li class="role-step">
+          <div class="role-step-num blue">1</div>
+          <div class="role-step-text">Get the <strong>room code</strong> for your game from the scorekeeper (shown in the Lobby and on the scoreboard).</div>
+        </li>
+        <li class="role-step">
+          <div class="role-step-num blue">2</div>
+          <div class="role-step-text">Go to the <strong>Lobby</strong> and enter the room code in the <em>Join with Room Code</em> box.</div>
+        </li>
+        <li class="role-step">
+          <div class="role-step-num blue">3</div>
+          <div class="role-step-text">You'll see the live scoreboard, both rosters, and real-time stats — <strong>read-only</strong>, no login required.</div>
+        </li>
+        <li class="role-step">
+          <div class="role-step-num blue">4</div>
+          <div class="role-step-text">Switch to <strong>Box Score</strong> or <strong>Charts</strong> at any time to see player stats, shooting percentages, and comparisons.</div>
+        </li>
+        <li class="role-step">
+          <div class="role-step-num blue">5</div>
+          <div class="role-step-text">After the game, check <strong>Teams &amp; Players</strong> to view full season stats and player profiles for your roster.</div>
+        </li>
+      </ol>
     </div>
 
   </div>

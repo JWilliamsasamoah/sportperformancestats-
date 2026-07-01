@@ -16,11 +16,10 @@
     <div class="nav-logo"><img src="logo.svg" alt="Sport Performance Stats"></div>
     <div class="room-badge" id="room-badge">Loading…</div>
     <ul class="nav-links">
-      <li><button class="share-btn" onclick="openShareModal()">📲 Coach Links</button></li>
       <li><a href="index.html">Home</a></li>
       <li><a href="lobby.html">← Lobby</a></li>
-      <li><a href="teams.html">Teams</a></li>
-      <li><a href="players.html">Players</a></li>
+      <li><a href="teams_players.html">Teams &amp; Players</a></li>
+      <li id="nav-live-badge" style="display:none"><span class="live-view-badge">LIVE VIEW</span></li>
     </ul>
   </nav>
 
@@ -38,9 +37,9 @@
   <div id="app-view" style="display:none">
 
     <div class="view-bar">
-      <button class="vbtn active" id="scoreboard-toggle" onclick="toggleView('scoreboard')">🏀 Scoreboard</button>
-      <button class="vbtn" id="stats-toggle"             onclick="toggleView('stats')">📊 Box Score</button>
-      <button class="vbtn" id="charts-toggle"            onclick="toggleView('charts')">📈 Charts</button>
+      <button class="vbtn active" id="scoreboard-toggle" onclick="toggleView('scoreboard')">Scoreboard</button>
+      <button class="vbtn" id="stats-toggle"             onclick="toggleView('stats')">Box Score</button>
+      <button class="vbtn" id="charts-toggle"            onclick="toggleView('charts')">Charts</button>
     </div>
 
     <!-- SCOREBOARD -->
@@ -58,67 +57,73 @@
             </div>
           </div>
           <div class="roster-block">
-            <div class="roster-hdr">ON COURT — tap to select</div>
+            <div class="roster-hdr" id="home-roster-hdr">ON COURT — tap to select</div>
             <ul id="home-roster" class="roster"></ul>
           </div>
-          <button class="sub-btn" onclick="openSubstitutionModal('home')">⇄ Substitute</button>
+          <button class="sub-btn scorekeeper-only" onclick="openSubstitutionModal('home')">Substitute</button>
         </section>
 
         <section class="control-panel">
+          <!-- Clock + period always visible -->
           <div class="clock-block">
             <div class="clock-display" id="game-clock">07:00</div>
             <div class="period-tag" id="period-display">PERIOD 1 / 4</div>
-            <div class="ci-row">
-              <input id="time-input" type="text" placeholder="MM:SS" maxlength="5">
-              <button class="ctrl-btn sec" onclick="setCustomTime()">SET</button>
+            <!-- Scorekeeper controls hidden until auth confirms -->
+            <div id="scorekeeper-controls" style="display:none">
+              <div class="ci-row">
+                <input id="time-input" type="text" placeholder="MM:SS" maxlength="5">
+                <button class="ctrl-btn sec" onclick="setCustomTime()">SET</button>
+              </div>
+              <div class="ci-row">
+                <button class="ctrl-btn grn" id="start-stop-btn" onclick="startStopClock()">▶ START</button>
+                <button class="ctrl-btn red" onclick="confirmReset()">↺ RESET</button>
+              </div>
+              <button class="end-game-btn" onclick="confirmEndGame()">End Game</button>
             </div>
-            <div class="ci-row">
-              <button class="ctrl-btn grn" id="start-stop-btn" onclick="startStopClock()">▶ START</button>
-              <button class="ctrl-btn red" onclick="confirmReset()">↺ RESET</button>
-            </div>
-            <button class="end-game-btn" onclick="confirmEndGame()">🏁 End Game</button>
           </div>
 
-          <div class="sel-indicator" id="sel-indicator">
-            <span class="si-dot off"></span>
-            <span id="sel-label">No player selected</span>
-            <button class="undo-btn" onclick="undoLastStat()">↩ Undo</button>
-          </div>
+          <div id="scorekeeper-stats-controls" style="display:none">
+            <div class="sel-indicator" id="sel-indicator">
+              <span class="si-dot off"></span>
+              <span id="sel-label">No player selected</span>
+              <button class="undo-btn" onclick="undoLastStat()">Undo</button>
+            </div>
 
-          <div class="sgroups">
-            <div class="sg">
-              <div class="sg-lbl">FOULS &amp; TIMEOUTS</div>
-              <div class="sgr">
-                <button class="sb org" onclick="updateFouls('home')">Home Foul</button>
-                <button class="sb org" onclick="updateFouls('away')">Away Foul</button>
-                <button class="sb gry" onclick="updateTimeout('home')">Home T.O.</button>
-                <button class="sb gry" onclick="updateTimeout('away')">Away T.O.</button>
+            <div class="sgroups">
+              <div class="sg">
+                <div class="sg-lbl">FOULS &amp; TIMEOUTS</div>
+                <div class="sgr">
+                  <button class="sb org" onclick="updateFouls('home')">Home Foul</button>
+                  <button class="sb org" onclick="updateFouls('away')">Away Foul</button>
+                  <button class="sb gry" onclick="updateTimeout('home')">Home T.O.</button>
+                  <button class="sb gry" onclick="updateTimeout('away')">Away T.O.</button>
+                </div>
               </div>
-            </div>
-            <div class="sg">
-              <div class="sg-lbl">SCORING</div>
-              <div class="sgr">
-                <button class="sb gld fat" onclick="handleStat(2,'2 Points')">+2</button>
-                <button class="sb blu fat" onclick="handleStat(3,'3 Points')">+3</button>
-                <button class="sb tel fat" onclick="handleStat(1,'Free Throw')">FT</button>
+              <div class="sg">
+                <div class="sg-lbl">SCORING</div>
+                <div class="sgr">
+                  <button class="sb gld fat" onclick="handleStat(2,'2 Points')">+2</button>
+                  <button class="sb blu fat" onclick="handleStat(3,'3 Points')">+3</button>
+                  <button class="sb tel fat" onclick="handleStat(1,'Free Throw')">FT</button>
+                </div>
               </div>
-            </div>
-            <div class="sg">
-              <div class="sg-lbl">OTHER STATS</div>
-              <div class="sgr wrap">
-                <button class="sb chip" onclick="handleStat(0,'Assist')">AST</button>
-                <button class="sb chip" onclick="handleStat(0,'Rebound')">REB</button>
-                <button class="sb chip" onclick="handleStat(0,'Block')">BLK</button>
-                <button class="sb chip" onclick="handleStat(0,'Steal')">STL</button>
-                <button class="sb chip tov" onclick="handleStat(0,'Turnover')">TOV</button>
+              <div class="sg">
+                <div class="sg-lbl">OTHER STATS</div>
+                <div class="sgr wrap">
+                  <button class="sb chip" onclick="handleStat(0,'Assist')">AST</button>
+                  <button class="sb chip" onclick="handleStat(0,'Rebound')">REB</button>
+                  <button class="sb chip" onclick="handleStat(0,'Block')">BLK</button>
+                  <button class="sb chip" onclick="handleStat(0,'Steal')">STL</button>
+                  <button class="sb chip tov" onclick="handleStat(0,'Turnover')">TOV</button>
+                </div>
               </div>
-            </div>
-            <div class="sg">
-              <div class="sg-lbl">MISSED SHOTS</div>
-              <div class="sgr">
-                <button class="sb mss" onclick="recordShotAttempt('2 Points')">Miss 2PT</button>
-                <button class="sb mss" onclick="recordShotAttempt('3 Points')">Miss 3PT</button>
-                <button class="sb mss" onclick="recordShotAttempt('Free Throw')">Miss FT</button>
+              <div class="sg">
+                <div class="sg-lbl">MISSED SHOTS</div>
+                <div class="sgr">
+                  <button class="sb mss" onclick="recordShotAttempt('2 Points')">Miss 2PT</button>
+                  <button class="sb mss" onclick="recordShotAttempt('3 Points')">Miss 3PT</button>
+                  <button class="sb mss" onclick="recordShotAttempt('Free Throw')">Miss FT</button>
+                </div>
               </div>
             </div>
           </div>
@@ -135,10 +140,10 @@
             </div>
           </div>
           <div class="roster-block">
-            <div class="roster-hdr">ON COURT — tap to select</div>
+            <div class="roster-hdr" id="away-roster-hdr">ON COURT — tap to select</div>
             <ul id="away-roster" class="roster"></ul>
           </div>
-          <button class="sub-btn" onclick="openSubstitutionModal('away')">⇄ Substitute</button>
+          <button class="sub-btn scorekeeper-only" onclick="openSubstitutionModal('away')">Substitute</button>
         </section>
       </div>
     </div>
@@ -146,10 +151,10 @@
     <!-- BOX SCORE -->
     <div id="stats-view" class="view">
       <div class="stabs">
-        <button class="stab active" id="home-tab" onclick="showTab('home')">🏠 Home</button>
-        <button class="stab" id="away-tab"         onclick="showTab('away')">✈ Away</button>
-        <button class="stab" id="log-tab"          onclick="showTab('log')">📋 Log</button>
-        <button class="stab accent"                onclick="generateStats()">⬇ Export</button>
+        <button class="stab active" id="home-tab" onclick="showTab('home')">Home</button>
+        <button class="stab" id="away-tab"         onclick="showTab('away')">Away</button>
+        <button class="stab" id="log-tab"          onclick="showTab('log')">Log</button>
+        <button class="stab accent"                onclick="generateStats()">Export</button>
       </div>
       <div class="sbody">
         <div id="home-stats-tab" class="sc active">
@@ -164,8 +169,8 @@
         </div>
         <div id="log-stats-tab" class="sc">
           <div class="log-bar">
-            <button class="ctrl-btn grn" onclick="saveSnapshot()">💾 Save Snapshot</button>
-            <button class="ctrl-btn red" id="clear-all-btn" onclick="clearAllSnapshots()" style="flex:none;margin-left:auto">🗑 Clear Snapshots</button>
+            <button class="ctrl-btn grn" onclick="saveSnapshot()">Save Snapshot</button>
+            <button class="ctrl-btn red" id="clear-all-btn" onclick="clearAllSnapshots()" style="flex:none;margin-left:auto">Clear Snapshots</button>
           </div>
           <ul id="saved-games-list" class="saved-list"></ul>
           <h2 class="stitle" style="margin-top:24px">Live Play Log</h2>
@@ -243,7 +248,7 @@
   <!-- MODAL: Substitution -->
   <div id="substitution-modal" class="overlay" style="display:none">
     <div class="modal">
-      <div class="mhdr"><span>⇄ Substitution</span><button class="mx" onclick="closeSubstitutionModal()">✕</button></div>
+      <div class="mhdr"><span>Substitution</span><button class="mx" onclick="closeSubstitutionModal()">✕</button></div>
       <div class="mbody">
         <label class="mlbl">Remove from court:</label>
         <select id="players-on-court" size="5" class="msel"></select>
@@ -261,7 +266,7 @@
   <!-- MODAL: Confirm reset -->
   <div id="confirm-modal" class="overlay" style="display:none">
     <div class="modal narrow">
-      <div class="mhdr"><span>⚠ Confirm Reset</span></div>
+      <div class="mhdr"><span>Confirm Reset</span></div>
       <div class="mbody"><p class="mdesc">Reset the clock to 7:00? Stats are kept.</p></div>
       <div class="mftr">
         <button class="ctrl-btn red" id="confirm-yes">Reset</button>
@@ -273,51 +278,18 @@
   <!-- MODAL: End Game -->
   <div id="end-game-modal" class="overlay" style="display:none">
     <div class="modal">
-      <div class="mhdr"><span>🏁 End Game</span></div>
+      <div class="mhdr"><span>End Game</span></div>
       <div class="mbody">
         <div class="end-score-display" id="end-score-display"></div>
         <p class="mdesc">This will stop the clock and mark the game as finished. Stats are saved automatically.</p>
-        <p class="mdesc" style="color:var(--t3);font-size:12px;margin-top:4px">The room will stay in the lobby so you can review stats. Delete it from the lobby when done.</p>
+        <p class="mdesc" style="color:var(--t3);font-size:12px;margin-top:4px">The room stays in the lobby so you can review stats. Archive it from the lobby when done.</p>
       </div>
       <div class="mftr">
-        <button class="ctrl-btn red" id="end-game-confirm-btn">🏁 End Game</button>
+        <button class="ctrl-btn red" id="end-game-confirm-btn">End Game</button>
         <button class="ctrl-btn sec" id="end-game-cancel-btn">Cancel</button>
       </div>
     </div>
   </div>
-
-  <!-- MODAL: Share Coach Links -->
-  <div id="share-modal" class="overlay" style="display:none">
-    <div class="modal">
-      <div class="mhdr">
-        <span>📲 Coach Links</span>
-        <button class="mx" onclick="closeShareModal()">✕</button>
-      </div>
-      <div class="mbody">
-        <p class="mdesc">Share these links with coaches. They get a live read-only view of their team — no scoreboard controls.</p>
-        <div class="share-link-card" id="share-home-card">
-          <div class="slc-label">🏠 Home Team Coach</div>
-          <div class="slc-team" id="share-home-name">—</div>
-          <div class="slc-url" id="share-home-url"></div>
-          <div class="slc-btns">
-            <button class="slc-btn" onclick="copyLink('home')">📋 Copy Link</button>
-            <button class="slc-btn open" onclick="openLink('home')">↗ Open</button>
-          </div>
-        </div>
-        <div class="share-link-card" id="share-away-card">
-          <div class="slc-label">✈ Away Team Coach</div>
-          <div class="slc-team" id="share-away-name">—</div>
-          <div class="slc-url" id="share-away-url"></div>
-          <div class="slc-btns">
-            <button class="slc-btn" onclick="copyLink('away')">📋 Copy Link</button>
-            <button class="slc-btn open" onclick="openLink('away')">↗ Open</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.5/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gridjs/dist/gridjs.umd.js"></script>
