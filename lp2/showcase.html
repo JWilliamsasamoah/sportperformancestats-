@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Sport Performance Stats · Season Showcase</title>
+  <link rel="icon" href="logo.svg">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="showcase.css">
+</head>
+<body>
+
+  <!-- Nav -->
+  <nav class="sc-nav">
+    <a href="lobby.html" class="sc-back">← Lobby</a>
+    <div class="sc-nav-center">
+      <span class="live-dot"></span>
+      <span class="sc-nav-title">SEASON LEADERBOARD</span>
+    </div>
+    <a href="index.html"><img src="logo.svg" class="sc-logo" alt="SPS"></a>
+  </nav>
+
+  <!-- Slides -->
+  <main class="sc-main">
+    <div class="slides-wrap" id="slides-wrap">
+      <div class="sc-loading">
+        <div class="sc-loading-dot"></div>
+        Loading stats…
+      </div>
+    </div>
+
+    <!-- Left / Right nav arrows -->
+    <button class="sc-arrow sc-arrow-left" id="arrow-left" onclick="prevSlide()">&#8249;</button>
+    <button class="sc-arrow sc-arrow-right" id="arrow-right" onclick="nextSlide()">&#8250;</button>
+  </main>
+
+  <!-- Footer -->
+  <footer class="sc-footer">
+    <div class="sc-dots" id="sc-dots"></div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+  </footer>
+
+  <script type="module" src="showcase.js"></script>
+</body>
+</html>

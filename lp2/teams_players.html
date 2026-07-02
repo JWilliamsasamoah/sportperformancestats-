@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sport Performance Stats · Teams &amp; Players</title>
+  <link rel="icon" href="logo.svg">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="teams_players_style.css">
+  <link rel="stylesheet" href="responsive.css">
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="nav-logo"><img src="logo.svg" alt="Sport Performance Stats"></div>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="lobby.html">Lobby</a></li>
+      <li><a href="teams_players.html" class="active">Teams &amp; Players</a></li>
+    </ul>
+  </nav>
+
+  <!-- DIVISION TOGGLE + SEARCH -->
+  <div class="division-toggle" id="division-toggle">
+    <div class="div-btns">
+      <button class="div-btn active" data-div="boy11-14"  onclick="setDivision('boy11-14')">Boys 11–14</button>
+      <button class="div-btn"       data-div="boy15-18"  onclick="setDivision('boy15-18')">Boys 15–18</button>
+      <button class="div-btn"       data-div="girl11-18" onclick="setDivision('girl11-18')">Girls 11–18</button>
+    </div>
+    <div class="search-wrap">
+      <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input type="text" id="player-search" class="player-search-input"
+             placeholder="Search players…" oninput="searchPlayers(this.value)" autocomplete="off">
+      <button class="search-clear" id="search-clear" onclick="clearSearch()" style="display:none"
+              title="Clear search">✕</button>
+    </div>
+  </div>
+
+  <!-- SEARCH RESULTS (replaces accordion when active) -->
+  <div id="search-results" class="search-results" style="display:none"></div>
+
+  <!-- MAIN CONTENT -->
+  <div class="tp-page" id="tp-page">
+
+    <div class="tp-loading" id="tp-loading">Loading…</div>
+
+    <!-- Boys 11-14 -->
+    <section class="division-section" id="div-boy11-14" data-div="boy11-14">
+      <div class="division-header">
+        <span class="division-label">Boys 11–14</span>
+        <button class="pbtn add admin-only" onclick="openAddTeamModal('boy11-14')">+ Add Team</button>
+      </div>
+      <div id="teams-boy11-14" class="teams-list"></div>
+    </section>
+
+    <!-- Boys 15-18 (hidden by default) -->
+    <section class="division-section" id="div-boy15-18" data-div="boy15-18" style="display:none">
+      <div class="division-header">
+        <span class="division-label">Boys 15–18</span>
+        <button class="pbtn add admin-only" onclick="openAddTeamModal('boy15-18')">+ Add Team</button>
+      </div>
+      <div id="teams-boy15-18" class="teams-list"></div>
+    </section>
+
+    <!-- Girls 11-18 (hidden by default) -->
+    <section class="division-section" id="div-girl11-18" data-div="girl11-18" style="display:none">
+      <div class="division-header">
+        <span class="division-label">Girls 11–18</span>
+        <button class="pbtn add admin-only" onclick="openAddTeamModal('girl11-18')">+ Add Team</button>
+      </div>
+      <div id="teams-girl11-18" class="teams-list"></div>
+    </section>
+
+  </div>
+
+  <!-- MANAGE USERS MODAL (Admin only) -->
+  <div id="usermgr-modal" class="overlay">
+    <div class="modal usermgr-modal">
+      <div class="mhdr">
+        <span>Manage Users</span>
+        <button class="mx" onclick="closeUserMgr()">✕</button>
+      </div>
+      <div class="mbody" style="padding:0">
+        <div class="usermgr-tabs">
+          <button class="umtab active" id="umtab-coaches" onclick="switchUmTab('coaches')">Coaches</button>
+          <button class="umtab"        id="umtab-stats"   onclick="switchUmTab('stats')">Scorekeepers</button>
+          <button class="umtab"        id="umtab-admin"   onclick="switchUmTab('admin')">Admins</button>
+        </div>
+        <div id="usermgr-list" class="usermgr-list">
+          <div class="usermgr-loading">Loading users…</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADD TEAM MODAL -->
+  <div id="add-team-modal" class="overlay">
+    <div class="modal">
+      <div class="mhdr">
+        <span>Add New Team</span>
+        <button class="mx" onclick="closeAddTeamModal()">✕</button>
+      </div>
+      <div class="mbody">
+        <div class="add-team-fields">
+          <label class="field-label">Team Name</label>
+          <input type="text" id="new-team-name" placeholder="e.g. Thunder, Lakers…">
+          <label class="field-label" style="margin-top:12px">Division</label>
+          <select id="new-team-division" class="division-select">
+            <option value="boy11-14">Boys 11–14</option>
+            <option value="boy15-18">Boys 15–18</option>
+            <option value="girl11-18">Girls 11–18</option>
+          </select>
+        </div>
+      </div>
+      <div class="mftr">
+        <button class="pbtn add" onclick="submitAddTeam()">+ Create Team</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROSTER MODAL -->
+  <div id="roster-modal" class="overlay">
+    <div class="modal">
+      <div class="mhdr">
+        <span id="team-roster-title">Manage Roster</span>
+        <button class="mx" onclick="closeRosterModal()">✕</button>
+      </div>
+      <div class="mbody">
+        <div class="add-player-row">
+          <input type="text"   id="player-name"   placeholder="Player name">
+          <input type="number" id="player-number" placeholder="Jersey #" min="0" max="99">
+          <button class="pbtn add" onclick="addPlayerToRoster()">+ Add</button>
+        </div>
+        <ul id="player-list" class="plist"></ul>
+      </div>
+      <div class="mftr">
+        <button class="pbtn save" onclick="saveRoster()">Save &amp; Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TRADE PLAYER MODAL -->
+  <div id="trade-modal" class="overlay">
+    <div class="modal">
+      <div class="mhdr">
+        <span>Trade Player</span>
+        <button class="mx" onclick="closeTradeModal()">✕</button>
+      </div>
+      <div class="mbody">
+        <div class="trade-player-info" id="trade-player-info"></div>
+        <div class="add-team-fields" style="margin-top:10px">
+          <label class="field-label">Send to Team</label>
+          <select id="trade-dest" class="division-select">
+            <option value="">— Select destination team —</option>
+          </select>
+        </div>
+        <p class="trade-note">Both coaches will receive an in-app notification about this trade.</p>
+      </div>
+      <div class="mftr" style="gap:8px">
+        <button class="pbtn" style="background:var(--bg2);color:var(--t2);border:1px solid var(--line)" onclick="closeTradeModal()">Cancel</button>
+        <button class="pbtn add" id="trade-submit-btn" onclick="executeTrade()">Confirm Trade</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOTIFICATION PANEL (coaches) -->
+  <div class="notif-overlay" id="notif-overlay" onclick="closeNotifPanel()"></div>
+  <div class="notif-panel" id="notif-panel">
+    <div class="notif-phdr">
+      <span>Notifications</span>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="notif-mark-all" id="notif-mark-all" onclick="markAllNotifsRead()">Mark all read</button>
+        <button class="mx" onclick="closeNotifPanel()">✕</button>
+      </div>
+    </div>
+    <div class="notif-list" id="notif-list">
+      <div class="notif-empty">No notifications yet.</div>
+    </div>
+  </div>
+
+  <!-- PLAYER PROFILE PANEL -->
+  <div class="panel-backdrop" id="panel-backdrop" onclick="closePlayerPanel()"></div>
+  <div class="player-panel" id="player-panel">
+    <div class="panel-header">
+      <span class="panel-title">Player Profile</span>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="abtn trade" id="panel-trade-btn" style="display:none" onclick="openTradeModal()">&#8646; Trade Player</button>
+        <button class="panel-close" onclick="closePlayerPanel()">✕</button>
+      </div>
+    </div>
+    <div class="panel-body" id="panel-body">
+
+      <div class="profile-view">
+
+        <!-- Hero -->
+        <div class="profile-hero">
+          <div class="profile-avatar" id="profile-avatar"></div>
+          <div class="profile-info">
+            <div class="profile-number" id="profile-number"></div>
+            <h1 class="profile-name" id="profile-name"></h1>
+            <div class="profile-team" id="profile-team"></div>
+            <div class="profile-badges" id="profile-badges"></div>
+          </div>
+          <div class="profile-headline-stats" id="profile-headline-stats"></div>
+        </div>
+
+        <!-- Stat cards -->
+        <div class="stat-cards-row" id="stat-cards-row"></div>
+
+        <!-- Charts -->
+        <div class="profile-charts-grid">
+          <div class="profile-chart-card">
+            <div class="pcc-title">Shot Efficiency</div>
+            <div style="position:relative;height:260px"><canvas id="playerShotChart"></canvas></div>
+          </div>
+          <div class="profile-chart-card">
+            <div class="pcc-title">Performance Radar</div>
+            <div style="position:relative;height:260px"><canvas id="playerRadarProfile"></canvas></div>
+          </div>
+          <div class="profile-chart-card">
+            <div class="pcc-title">Scoring Split</div>
+            <div style="position:relative;height:260px"><canvas id="playerDonutChart"></canvas></div>
+          </div>
+        </div>
+
+        <!-- Game history -->
+        <div class="game-history-section">
+          <div class="profile-chart-card gh-card">
+            <div class="pcc-title">Game History — click a game to filter</div>
+            <div id="game-history-list" class="game-history-list"></div>
+          </div>
+          <div class="profile-chart-card">
+            <div class="pcc-title">Stats Per Game</div>
+            <div class="gh-legend">
+              <span><span style="background:#f5c518"></span>PTS</span>
+              <span><span style="background:#14b8a6"></span>REB</span>
+              <span><span style="background:#3b82f6"></span>AST</span>
+            </div>
+            <div style="position:relative;height:260px"><canvas id="playerHistoryChart"></canvas></div>
+          </div>
+        </div>
+
+        <!-- Timeline -->
+        <div class="profile-chart-card">
+          <div class="pcc-title">Play-by-Play Timeline</div>
+          <div id="timeline-log" class="timeline-log"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <script type="module" src="teams_players_script.js"></script>
+
+  <nav class="mobile-nav">
+    <a href="index.html"><span class="mn-icon">HM</span>Home</a>
+    <a href="lobby.html"><span class="mn-icon">LBY</span>Lobby</a>
+    <a href="teams_players.html" class="active"><span class="mn-icon">TMS</span>Teams</a>
+    <a href="showcase.html"><span class="mn-icon">SCR</span>Showcase</a>
+  </nav>
+</body>
+</html>

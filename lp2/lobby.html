@@ -16,8 +16,8 @@
     <ul class="nav-links">
       <li><a href="index.html">Home</a></li>
       <li><a href="lobby.html" class="active">Lobby</a></li>
-      <li><a href="teams.html">Teams</a></li>
-      <li><a href="players.html">Players</a></li>
+      <li><a href="teams_players.html">Teams &amp; Players</a></li>
+      <li><a href="showcase.html">Showcase</a></li>
     </ul>
   </nav>
 
@@ -26,46 +26,39 @@
     <!-- Header -->
     <div class="lobby-header">
       <h1>Game Lobby</h1>
-      <p class="lobby-sub">Create a new game or join an existing one. Up to 4 games can run at the same time.</p>
+      <p class="lobby-sub">Create a game or join one with a room code.</p>
     </div>
 
-    <!-- Create + Join row -->
-    <div class="action-row">
-
-      <div class="action-card">
-        <div class="ac-icon">🏀</div>
-        <h2>New Game</h2>
-        <p>Start a fresh game. A unique room code will be generated.</p>
-        <div class="ac-fields">
+    <!-- Create Game — shown only for admin/stats via JS -->
+    <div id="create-section" style="display:none">
+      <div class="create-card">
+        <div class="create-card-label">New Game</div>
+        <div class="create-fields">
           <select id="new-home-team" class="lselect">
-            <option value="">Home Team</option>
+            <option value="">Loading teams…</option>
           </select>
+          <div class="vs-label">VS</div>
           <select id="new-away-team" class="lselect">
-            <option value="">Away Team</option>
+            <option value="">Loading teams…</option>
           </select>
+          <button id="create-btn" class="lbtn primary" onclick="createGame()">+ Create Game</button>
         </div>
-        <button class="lbtn primary" onclick="createGame()">+ Create Game</button>
       </div>
+    </div>
 
-      <div class="action-divider">OR</div>
-
-      <div class="action-card">
-        <div class="ac-icon">🔑</div>
-        <h2>Join Game</h2>
-        <p>Enter a room code to open an existing game scoreboard.</p>
-        <div class="ac-fields">
-          <input id="join-code" type="text" class="lcode-input" placeholder="Enter room code…" maxlength="6">
-        </div>
-        <button class="lbtn secondary" onclick="joinGame()">→ Join Game</button>
+    <!-- Join Game -->
+    <div class="join-card">
+      <div class="join-card-label">Join with Room Code</div>
+      <div class="join-fields">
+        <input id="join-code" type="text" class="lcode-input" placeholder="XXXXXX" maxlength="6" autocomplete="off" spellcheck="false">
+        <button class="lbtn secondary" onclick="joinGame()">→ Join</button>
       </div>
-
     </div>
 
     <!-- Active Games -->
     <div class="active-games-section">
       <div class="ag-header">
-        <h2 class="ag-title">Active Games</h2>
-        <button class="lbtn ghost" onclick="loadActiveGames()">↻ Refresh</button>
+        <h2 class="ag-title">Active Games <span class="ag-count" id="game-count-badge"></span></h2>
       </div>
       <div id="active-games-grid" class="active-games-grid">
         <div class="ag-loading">Loading games…</div>
@@ -74,8 +67,35 @@
 
   </div>
 
- 
+  <!-- Room Created Modal -->
+  <div id="room-modal" class="overlay">
+    <div class="modal room-modal">
+      <div class="mhdr">
+        <span>Game Created!</span>
+        <button class="mx" onclick="closeRoomModal()">✕</button>
+      </div>
+      <div class="room-modal-body">
+        <div class="room-modal-matchup" id="modal-matchup"></div>
+        <div class="room-modal-code-wrap">
+          <div class="room-modal-code" id="modal-code"></div>
+          <button class="copy-code-btn" onclick="copyModalCode()" title="Copy code">⎘ Copy</button>
+        </div>
+        <p class="room-modal-hint">Share this code with your team so they can join.</p>
+      </div>
+      <div class="mftr" style="gap:8px">
+        <button class="lbtn ghost" style="width:auto;padding:10px 20px" onclick="closeRoomModal()">Stay in Lobby</button>
+        <button class="lbtn primary" style="width:auto;padding:10px 24px" onclick="goToGame()">▶ Open Scoreboard</button>
+      </div>
+    </div>
+  </div>
 
   <script type="module" src="lobby.js"></script>
+
+  <nav class="mobile-nav">
+    <a href="index.html"><span class="mn-icon">HM</span>Home</a>
+    <a href="lobby.html" class="active"><span class="mn-icon">LBY</span>Lobby</a>
+    <a href="teams_players.html"><span class="mn-icon">TMS</span>Teams</a>
+    <a href="showcase.html"><span class="mn-icon">SCR</span>Showcase</a>
+  </nav>
 </body>
 </html>

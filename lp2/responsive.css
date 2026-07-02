@@ -515,3 +515,51 @@ html, body { overflow-x: hidden; }
   .big-score { color: black; }
   .clock-display { color: black; background: #eee; }
 }
+
+/* ================================================
+   TEAMS & PLAYERS PAGE — responsive rules
+   ================================================ */
+@media (max-width: 767px) {
+  /* Division toggle sits below the shorter mobile navbar */
+  .division-toggle { top: 80px; }
+
+  /* Accordion header: allow wrapping on small screens */
+  .ta-header { flex-wrap: wrap; gap: 8px; }
+  .ta-record  { order: 3; width: 100%; }
+  .ta-actions { order: 4; width: 100%; overflow-x: auto; }
+
+  /* Smaller action buttons */
+  .abtn { padding: 5px 9px; font-size: 11px; }
+
+  /* Player grid — 2 columns */
+  .player-grid { grid-template-columns: repeat(2, 1fr); }
+
+  /* Stat cards — 3 columns */
+  .stat-cards-row { grid-template-columns: repeat(3, 1fr); }
+
+  /* Profile charts — single column */
+  .profile-charts-grid { grid-template-columns: 1fr; }
+
+  /* Game history section — single column */
+  .game-history-section { grid-template-columns: 1fr; }
+
+  /* Player panel is already full-screen; tighten padding on mobile */
+  .panel-body { padding: 16px 16px 40px; }
+  .player-panel { transform: translateY(100%); }
+
+  /* Hero adapts to narrow width */
+  .profile-hero { flex-wrap: wrap; }
+  .profile-headline-stats { width: 100%; justify-content: center; }
+}
+
+@media (max-width: 480px) {
+  /* Single-column player grid on very small screens */
+  .player-grid { grid-template-columns: repeat(2, 1fr); }
+
+  /* Headline stats tighten up */
+  .hs-val { font-size: 30px; }
+  .hs-stat { gap: 0; }
+
+  /* Profile name fits */
+  .profile-name { font-size: 26px; }
+}
