@@ -44,7 +44,17 @@ body::before {
   font-family: 'Bebas Neue', sans-serif; font-size: 24px;
   letter-spacing: 3px; color: var(--t1);
 }
-.sc-logo { height: 44px; min-width: 90px; display: block; margin-left: auto; }
+.sc-logo { height: 44px; min-width: 90px; display: block; }
+
+/* SPORT TOGGLE */
+.sc-sport-toggle { display: flex; gap: 4px; }
+.sct {
+  padding: 6px 12px; border-radius: 7px; border: 1.5px solid var(--line);
+  background: var(--bg2); color: var(--t3); font-size: 16px;
+  cursor: pointer; transition: all .15s;
+}
+.sct:hover { border-color: var(--line2); color: var(--t2); }
+.sct.active { background: rgba(245,197,24,.12); border-color: var(--gold); }
 
 /* LIVE DOT */
 .live-dot {

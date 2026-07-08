@@ -4,8 +4,37 @@ import {
   sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import {
-  getFirestore, doc, getDoc, setDoc, serverTimestamp
+  getFirestore, doc, getDoc, setDoc, serverTimestamp,
+  collection, query, where, getDocs, limit
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+// Resolves an email-or-username string to an email address.
+// If the input contains '@' it is used directly; otherwise it is treated as
+// a username and looked up in the usernames → users Firestore chain.
+async function resolveToEmail(input) {
+  const val = input.trim();
+  if (val.includes("@")) return val;
+  const slug = val.replace(/^@/, "").toLowerCase();
+
+  // Primary: usernames collection lookup (publicly readable)
+  try {
+    const unSnap = await getDoc(doc(db, "usernames", slug));
+    if (unSnap.exists()) {
+      const uid = unSnap.data().uid;
+      const uSnap = await getDoc(doc(db, "users", uid));
+      if (uSnap.exists()) return uSnap.data().email;
+    }
+  } catch (_) {}
+
+  // Fallback: query users collection by username field
+  try {
+    const q    = query(collection(db, "users"), where("username", "==", slug), limit(1));
+    const snap = await getDocs(q);
+    if (!snap.empty) return snap.docs[0].data().email;
+  } catch (_) {}
+
+  throw { code: "auth/user-not-found" };
+}
 
 
 const FB = {
@@ -37,15 +66,16 @@ onAuthStateChanged(auth, async (user) => {
 // ── Sign In ──
 btnEl.addEventListener("click", async () => {
   hideMessages();
-  const email    = emailEl.value.trim();
-  const password = passEl.value;
-  if (!email || !password) { showError("Please enter your email and password."); return; }
+  const identifier = emailEl.value.trim();
+  const password   = passEl.value;
+  if (!identifier || !password) { showError("Please enter your email (or username) and password."); return; }
 
   setLoading(true);
   try {
-    const cred = await signInWithEmailAndPassword(auth, email, password);
-    const uid  = cred.user.uid;
-    const snap = await getDoc(doc(db, "users", uid));
+    const email = await resolveToEmail(identifier);
+    const cred  = await signInWithEmailAndPassword(auth, email, password);
+    const uid   = cred.user.uid;
+    const snap  = await getDoc(doc(db, "users", uid));
 
     if (!snap.exists()) {
       // Pre-existing account — create an Admin profile automatically
@@ -60,7 +90,6 @@ btnEl.addEventListener("click", async () => {
         division:  null,
         createdAt: serverTimestamp(),
       });
-      // Claim the username (best-effort — no error if already taken)
       try {
         await setDoc(doc(db, "usernames", username), { uid });
       } catch (_) {}
@@ -96,19 +125,20 @@ cancelReset.addEventListener("click", () => {
 });
 
 resetBtn.addEventListener("click", async () => {
-  const email = resetEmail.value.trim();
-  if (!email) { showError("Enter your email address to reset your password."); return; }
+  const identifier = resetEmail.value.trim();
+  if (!identifier) { showError("Enter your email or username to reset your password."); return; }
 
   resetBtn.disabled    = true;
   resetBtn.textContent = "Sending…";
   try {
+    const email = await resolveToEmail(identifier);
     await sendPasswordResetEmail(auth, email);
     resetPanel.style.display = "none";
     forgotLink.style.display  = "block";
-    showSuccess(`Reset email sent to ${email}. Check your inbox.`);
+    showSuccess(`Reset email sent. Check your inbox.`);
   } catch (e) {
     showError(e.code === "auth/user-not-found"
-      ? "No account found with that email."
+      ? "No account found. Check your email or username."
       : "Failed to send reset email. Try again.");
   } finally {
     resetBtn.disabled    = false;
@@ -142,7 +172,7 @@ function hideMessages() {
 function friendlyError(code) {
   switch (code) {
     case "auth/user-not-found":
-    case "auth/invalid-email":    return "No account found with that email.";
+    case "auth/invalid-email":    return "No account found. Check your email or username.";
     case "auth/wrong-password":
     case "auth/invalid-credential": return "Incorrect password. Please try again.";
     case "auth/too-many-requests":  return "Too many attempts. Try again later.";

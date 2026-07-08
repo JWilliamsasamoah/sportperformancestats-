@@ -12,11 +12,11 @@ const FB = {
   appId: "1:695414880372:web:bd07071a02390219bd3921"
 };
 
-const app = initializeApp(FB, "showcase");
+const app = initializeApp(FB);
 const db  = getFirestore(app);
 
 // ── Category definitions ──
-const CATS = [
+const BB_CATS = [
   { key: "points",     label: "Points Leaders",     icon: "PTS", color: "#f5c518", abbr: "PTS" },
   { key: "rebounds",   label: "Rebound Leaders",    icon: "REB", color: "#14b8a6", abbr: "REB" },
   { key: "assists",    label: "Assist Leaders",     icon: "AST", color: "#3b82f6", abbr: "AST" },
@@ -25,50 +25,110 @@ const CATS = [
   { key: "freeThrows", label: "Free Throw Leaders", icon: "FT",  color: "#a855f7", abbr: "FT"  },
 ];
 
+const VB_CATS = [
+  { key: "kills",         label: "Kill Leaders",         icon: "K",   color: "#f5c518", abbr: "K"   },
+  { key: "digs",          label: "Dig Leaders",          icon: "DIG", color: "#14b8a6", abbr: "DIG" },
+  { key: "aces",          label: "Ace Leaders",          icon: "ACE", color: "#3b82f6", abbr: "ACE" },
+  { key: "assists",       label: "Assist Leaders",       icon: "AST", color: "#22c55e", abbr: "AST" },
+  { key: "blocks",        label: "Block Leaders",        icon: "BLK", color: "#ef4444", abbr: "BLK" },
+  { key: "attackErrors",  label: "Fewest Attack Errors", icon: "ERR", color: "#a855f7", abbr: "ERR" },
+];
+
+let CATS           = BB_CATS;
+let showcaseSport  = "basketball";
+let allGames       = [];
+
 const SLIDE_MS  = 8000; // ms per slide
 const TOP_N     = 10;
 
-let slides      = [];     // slide DOM elements
+let slides      = [];
 let currentIdx  = 0;
 let autoTimer   = null;
 let initialized = false;
 let allPlayers  = [];
 
+// ── Sport toggle ──
+window.setShowcaseSport = function(sport) {
+  if (sport === showcaseSport) return;
+  showcaseSport = sport;
+  CATS = sport === "volleyball" ? VB_CATS : BB_CATS;
+
+  document.getElementById("sct-bb")?.classList.toggle("active", sport === "basketball");
+  document.getElementById("sct-vb")?.classList.toggle("active", sport === "volleyball");
+
+  const sportGames = allGames.filter(g =>
+    sport === "volleyball" ? g.sport === "volleyball" : (g.sport !== "volleyball")
+  );
+  allPlayers = buildPlayers(sportGames);
+  initialized = false;
+  initSlides();
+  updateContent(allPlayers);
+  goTo(0, true);
+  resetTimer();
+};
+
 // ── Aggregate player stats across all game rooms ──
 function buildPlayers(games) {
   const map = {};
+  const isVB = showcaseSport === "volleyball";
 
   games.forEach(g => {
     if (!g.playerStats) return;
     const sideTeam = { home: g.homeTeam, away: g.awayTeam };
 
     Object.entries(g.playerStats).forEach(([key, s]) => {
-      const dash = key.indexOf(" - ");
-      if (dash < 0) return;
-      const side    = key.slice(0, dash);
-      const nameNum = key.slice(dash + 3);
-      const team    = sideTeam[side];
-      if (!team) return;
+      // Volleyball keys: "Name_Number_side"
+      // Basketball keys: "side - Name #Number"
+      let side, nameNum, team;
 
+      if (isVB) {
+        const parts = key.split("_");
+        if (parts.length < 3) return;
+        side    = parts[parts.length - 1];
+        nameNum = `${parts.slice(0, -2).join("_")} #${parts[parts.length - 2]}`;
+        team    = sideTeam[side];
+      } else {
+        const dash = key.indexOf(" - ");
+        if (dash < 0) return;
+        side    = key.slice(0, dash);
+        nameNum = key.slice(dash + 3);
+        team    = sideTeam[side];
+      }
+
+      if (!team) return;
       const pKey = `${team.id || team.name}::${nameNum}`;
 
       if (!map[pKey]) {
         map[pKey] = {
-          name:       nameNum.split(" #")[0] || nameNum,
-          number:     nameNum.split(" #")[1] || "",
-          team:       team.name || side,
-          points:     0, rebounds: 0, assists: 0,
-          steals:     0, blocks:   0, freeThrows: 0,
+          name:   nameNum.split(" #")[0] || nameNum,
+          number: nameNum.split(" #")[1] || "",
+          team:   team.name || side,
+          // basketball
+          points: 0, rebounds: 0, steals: 0, freeThrows: 0,
+          // both
+          assists: 0, blocks: 0,
+          // volleyball
+          kills: 0, digs: 0, aces: 0, attackErrors: 0, serviceErrors: 0,
         };
       }
 
       const p = map[pKey];
-      p.points     += s.points     || 0;
-      p.rebounds   += s.rebounds   || 0;
-      p.assists    += s.assists    || 0;
-      p.steals     += s.steals     || 0;
-      p.blocks     += s.blocks     || 0;
-      p.freeThrows += s.freeThrows || 0;
+      if (isVB) {
+        p.kills        += s.kills         || 0;
+        p.digs         += s.digs          || 0;
+        p.aces         += s.aces          || 0;
+        p.assists      += s.assists       || 0;
+        p.blocks       += s.blocks        || 0;
+        p.attackErrors += s.attackErrors  || 0;
+        p.serviceErrors+= s.serviceErrors || 0;
+      } else {
+        p.points     += s.points     || 0;
+        p.rebounds   += s.rebounds   || 0;
+        p.assists    += s.assists    || 0;
+        p.steals     += s.steals     || 0;
+        p.blocks     += s.blocks     || 0;
+        p.freeThrows += s.freeThrows || 0;
+      }
     });
   });
 
@@ -273,8 +333,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   onSnapshot(q,
     snap => {
-      const games   = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      allPlayers    = buildPlayers(games);
+      allGames = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const sportGames = allGames.filter(g =>
+        showcaseSport === "volleyball" ? g.sport === "volleyball" : (g.sport !== "volleyball")
+      );
+      allPlayers = buildPlayers(sportGames);
 
       if (!initialized) {
         initialized = true;
@@ -283,7 +346,6 @@ document.addEventListener("DOMContentLoaded", () => {
         goTo(0, true);
         resetTimer();
       } else {
-        // Live update — refresh content without interrupting the current slide transition
         updateContent(allPlayers);
       }
     },
