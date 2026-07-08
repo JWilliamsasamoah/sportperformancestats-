@@ -139,6 +139,13 @@ body {
   border-color: var(--gold); color: var(--gold);
 }
 .roster li.active .rnum { color: var(--gold); }
+.roster li.selected {
+  background: linear-gradient(90deg, rgba(34,197,94,.15), rgba(34,197,94,.05));
+  border-color: var(--grn); color: var(--grn);
+}
+.roster li.selected .pnum { color: var(--grn); }
+.roster li .pnum { font-family: 'Bebas Neue', sans-serif; font-size: 17px; color: var(--t3); min-width: 24px; }
+.roster li .pname { font-size: 13px; font-weight: 500; color: var(--t1); }
 
 .sub-btn {
   width: 100%; background: transparent; border: 1.5px solid var(--blue);
@@ -223,6 +230,8 @@ body {
 .sb.tov:hover { background: var(--red); color: #fff; }
 .sb.mss  { flex: 1; background: rgba(239,68,68,.07); border: 1px solid rgba(239,68,68,.3); color: #f87171; }
 .sb.mss:hover { background: var(--red); border-color: var(--red); color: #fff; filter: none; }
+.sb.red  { background: rgba(239,68,68,.12); border: 1.5px solid rgba(239,68,68,.4); color: #f87171; }
+.sb.red:hover { background: var(--red); border-color: var(--red); color: #fff; }
 
 /* ── GENERIC BUTTONS ── */
 .ctrl-btn {

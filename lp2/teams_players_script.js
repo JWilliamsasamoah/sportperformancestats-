@@ -8,7 +8,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/fireba
 import {
   getFirestore, collection, getDocs, addDoc,
   updateDoc, deleteDoc, doc, query, orderBy,
-  where, serverTimestamp
+  where, serverTimestamp, onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { requireAuth, buildNavAuth } from "./auth-guard.js";
@@ -26,16 +26,22 @@ const app      = initializeApp(FB);
 const db       = getFirestore(app);
 const auth     = getAuth(app);
 const TEAMS    = collection(db, "teams");
+const VB_TEAMS = collection(db, "volleyballTeams");
 const ROOMS    = collection(db, "gameRooms");
 const NOTIFS   = collection(db, "notifications");
 const USERS    = collection(db, "users");
+
+// ── Current sport ──
+let activeSport = "basketball";
+let vbTeams     = [];
+let vbLoaded    = false;
 
 // ── Avatar colors & chart colors ──
 const AV_COLORS = ["av-blue","av-gold","av-green","av-purple","av-teal","av-red","av-orange"];
 const C = {
   gold:"#f5c518", blue:"#3b82f6", teal:"#14b8a6",
   grn:"#22c55e",  red:"#ef4444",  purple:"#a855f7",
-  line:"#2e3550", t2:"#8b95b0",   t3:"#4d5470"
+  org:"#f97316",  line:"#2e3550", t2:"#8b95b0",   t3:"#4d5470"
 };
 
 // ── Division config ──
@@ -60,6 +66,13 @@ let currentTeamId    = null;
 
 // Chart instances (destroyed/recreated per player)
 let chartShot = null, chartRadar = null, chartDonut = null, chartHistory = null;
+
+// VB player state
+let allVBGames      = [];
+let vbAllPlayers    = [];
+let currentVBPlayer = null;
+let vbChartAttack   = null, vbChartRadar = null, vbChartDonut = null, vbChartHistory = null;
+let vbRoomsUnsub    = null;
 
 // Trade state
 let tradePlayer = null;
@@ -198,6 +211,299 @@ function renderAll() {
   }
 }
 
+// ── Sport tab ──
+window.setSportTab = function(sport) {
+  activeSport = sport;
+  document.getElementById("tab-basketball").classList.toggle("active", sport === "basketball");
+  document.getElementById("tab-volleyball").classList.toggle("active", sport === "volleyball");
+
+  const bbPage = document.getElementById("tp-page");
+  const vbPage = document.getElementById("vb-page");
+  const divToggle = document.getElementById("division-toggle");
+  const searchResults = document.getElementById("search-results");
+
+  if (sport === "volleyball") {
+    bbPage.style.display  = "none";
+    vbPage.style.display  = "block";
+    divToggle.style.display = "none";
+    if (searchResults) searchResults.style.display = "none";
+    if (!vbLoaded) loadVBTeams();
+  } else {
+    bbPage.style.display  = "block";
+    vbPage.style.display  = "none";
+    divToggle.style.display = "";
+  }
+};
+
+async function loadVBTeams() {
+  const loadingEl = document.getElementById("vb-loading");
+  const container = document.getElementById("teams-volleyball");
+  if (loadingEl) loadingEl.style.display = "block";
+
+  try {
+    const snap = await getDocs(VB_TEAMS);
+    vbTeams    = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    vbLoaded   = true;
+
+    renderVBTeams();
+
+    // Live listener for VB game rooms — updates stats & W/L whenever Firestore changes
+    if (vbRoomsUnsub) vbRoomsUnsub();
+    vbRoomsUnsub = onSnapshot(
+      query(ROOMS, where("sport", "==", "volleyball")),
+      snap => {
+        const allVBRooms = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        allVBGames = allVBRooms.filter(g => g.playerStats && Object.keys(g.playerStats).length > 0);
+
+        // Recompute W/L
+        vbTeams.forEach(t => { t.wins = 0; t.losses = 0; });
+        allVBRooms.filter(g => g.status === "done").forEach(g => {
+          if (g.homeScore == null || g.awayScore == null || g.homeScore === g.awayScore) return;
+          const home = vbTeams.find(t => t.id === g.homeTeam?.id);
+          const away = vbTeams.find(t => t.id === g.awayTeam?.id);
+          if (g.homeScore > g.awayScore) { if (home) home.wins++; if (away) away.losses++; }
+          else { if (away) away.wins++; if (home) home.losses++; }
+        });
+
+        buildVBAllPlayers();
+        renderVBTeams();
+
+        // Refresh open player panel live
+        if (currentVBPlayer) {
+          const fresh = vbAllPlayers.find(
+            p => p.name === currentVBPlayer.name && p.number === currentVBPlayer.number
+          );
+          if (fresh) {
+            currentVBPlayer = fresh;
+            renderVBHero(fresh, fresh.stats, "Season Totals");
+            renderVBStatCards(fresh.stats);
+            renderVBCharts(fresh, fresh.stats);
+            renderVBGameHistory(fresh, null);
+          }
+        }
+      },
+      () => {} // ignore errors silently
+    );
+  } catch (e) {
+    if (container) container.innerHTML = `<div class="tp-empty-division">Failed to load volleyball teams.</div>`;
+  }
+  if (loadingEl) loadingEl.style.display = "none";
+}
+
+function renderVBTeams() {
+  const container = document.getElementById("teams-volleyball");
+  if (!container) return;
+  container.innerHTML = "";
+
+  if (!vbTeams.length) {
+    container.innerHTML = `<div class="tp-empty-division">No volleyball teams yet. Click "+ Add Team" to get started.</div>`;
+    return;
+  }
+
+  const sorted = [...vbTeams].sort((a, b) => {
+    const pa = (a.wins || 0) / Math.max(1, (a.wins || 0) + (a.losses || 0));
+    const pb = (b.wins || 0) / Math.max(1, (b.wins || 0) + (b.losses || 0));
+    return pb - pa;
+  });
+
+  sorted.forEach((team, rank) => {
+    const origIdx = vbTeams.indexOf(team);
+    container.appendChild(buildVBTeamAccordion(team, origIdx, rank));
+  });
+}
+
+function buildVBTeamAccordion(team, origIdx, rank) {
+  const total  = (team.wins || 0) + (team.losses || 0);
+  const pct    = total > 0 ? ((team.wins / total) * 100).toFixed(1) + "%" : "—";
+  const rClass = rank === 0 ? "r1" : rank === 1 ? "r2" : rank === 2 ? "r3" : "";
+  const medal  = rank === 0 ? " 🥇" : rank === 1 ? " 🥈" : rank === 2 ? " 🥉" : "";
+
+  const wrapper = document.createElement("div");
+  wrapper.className = "team-accordion";
+  wrapper.dataset.teamId = team.id;
+
+  wrapper.innerHTML = `
+    <div class="ta-header" onclick="toggleVBTeam('${team.id}')">
+      <span class="rank ${rClass}">${rank + 1}</span>
+      <span class="ta-name">${team.name}${medal}</span>
+      <div class="ta-record">
+        <span class="tw">${team.wins || 0}W</span>
+        <span class="tl">${team.losses || 0}L</span>
+        <span class="ta-pct">${pct}</span>
+      </div>
+      <div class="ta-actions">
+        <div class="ta-admin-acts admin-only" style="display:flex;gap:6px">
+          <button class="abtn rename" onclick="event.stopPropagation();startRenameVBTeam('${team.id}')">Rename</button>
+          <button class="abtn del"    onclick="event.stopPropagation();deleteVBTeam('${team.id}')">Delete</button>
+        </div>
+        <button class="abtn roster" onclick="event.stopPropagation();openVBRosterModal(${origIdx})">Roster</button>
+      </div>
+      <span class="ta-chevron">▼</span>
+    </div>
+    <div class="ta-body" id="vb-body-${team.id}">
+      <div class="ta-body-inner" id="vb-inner-${team.id}">
+        <div style="padding:16px;color:var(--t3);font-size:13px">${team.roster?.length ? `${team.roster.length} player(s) on roster.` : "No players yet — add via Roster."}</div>
+      </div>
+    </div>`;
+
+  if (userProfile?.role !== "admin") {
+    wrapper.querySelector(".admin-only")?.style.setProperty("display", "none");
+  }
+  return wrapper;
+}
+
+window.toggleVBTeam = function(teamId) {
+  const body    = document.getElementById(`vb-body-${teamId}`);
+  const inner   = document.getElementById(`vb-inner-${teamId}`);
+  const chevron = body?.previousElementSibling?.querySelector(".ta-chevron");
+  if (!body) return;
+  const isOpen = body.classList.contains("open");
+  body.classList.toggle("open");
+  if (chevron) chevron.style.transform = isOpen ? "" : "rotate(180deg)";
+  if (!isOpen && inner && !body.dataset.loaded) {
+    body.dataset.loaded = "1";
+    populateVBTeamBody(teamId, inner);
+  }
+};
+
+// ── VB Roster Modal ──
+let vbCurrentTeamIdx = null;
+
+window.openVBRosterModal = function(idx) {
+  vbCurrentTeamIdx = idx;
+  const team = vbTeams[idx];
+  if (!team) return;
+
+  document.getElementById("team-roster-title").textContent = `${team.name} — Roster`;
+  document.getElementById("player-name").value   = "";
+  document.getElementById("player-number").value = "";
+  window._activeRosterSport = "volleyball";
+  renderVBRoster(team.roster || []);
+  document.getElementById("roster-modal").classList.add("open");
+};
+
+function renderVBRoster(roster) {
+  const ul = document.getElementById("player-list");
+  if (!ul) return;
+  ul.innerHTML = "";
+  if (!roster.length) {
+    ul.innerHTML = `<li style="justify-content:center;color:var(--t3)">No players yet. Add one above.</li>`;
+    return;
+  }
+  roster.forEach((p, i) => {
+    const li = document.createElement("li");
+    li.dataset.idx = i;
+    li.innerHTML = `
+      <span>#${p.number} — ${p.name}</span>
+      <div style="display:flex;gap:6px">
+        <button onclick="removeVBPlayer(${i})">Remove</button>
+      </div>`;
+    ul.appendChild(li);
+  });
+}
+
+window.startEditVBNumber = function(idx) {
+  const team = vbTeams[vbCurrentTeamIdx];
+  const p    = team.roster[idx];
+  const li = document.querySelector(`#player-list li[data-idx="${idx}"]`);
+  if (!li) return;
+  li.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px">
+      <span>${p.name}</span>
+      <input class="num-edit-input" id="vb-num-edit-${idx}" type="number" value="${p.number}" min="0" max="99">
+    </div>
+    <div style="display:flex;gap:6px">
+      <button class="plist-btn-save" id="vb-num-edit-save-${idx}">Save</button>
+      <button class="plist-btn-cancel" id="vb-num-edit-cancel-${idx}">Cancel</button>
+    </div>`;
+  const inp = document.getElementById(`vb-num-edit-${idx}`);
+  inp.focus(); inp.select();
+  inp.addEventListener("keydown", e => {
+    if (e.key === "Enter")  window.saveEditVBNumber(idx);
+    if (e.key === "Escape") renderVBRoster(vbTeams[vbCurrentTeamIdx].roster);
+  });
+  document.getElementById(`vb-num-edit-save-${idx}`)?.addEventListener("click", () => window.saveEditVBNumber(idx));
+  document.getElementById(`vb-num-edit-cancel-${idx}`)?.addEventListener("click", () => renderVBRoster(vbTeams[vbCurrentTeamIdx].roster));
+};
+
+window.saveEditVBNumber = async function(idx) {
+  const team    = vbTeams[vbCurrentTeamIdx];
+  const newNum  = parseInt(document.getElementById(`vb-num-edit-${idx}`)?.value);
+  if (isNaN(newNum)) return;
+  team.roster[idx].number = String(newNum);
+  await updateDoc(doc(db, "volleyballTeams", team.id), { roster: team.roster });
+  renderVBRoster(team.roster);
+};
+
+window.removeVBPlayer = async function(idx) {
+  if (!confirm("Remove this player from the roster?")) return;
+  const team = vbTeams[vbCurrentTeamIdx];
+  team.roster.splice(idx, 1);
+  await updateDoc(doc(db, "volleyballTeams", team.id), { roster: team.roster });
+  renderVBRoster(team.roster);
+};
+
+// ── VB Add Team modal ──
+window.openAddVBTeamModal = function() {
+  window._activeAddSport = "volleyball";
+  document.getElementById("new-team-name").value = "";
+  const divRow = document.getElementById("new-team-division")?.closest(".add-team-fields")?.querySelector("label:last-of-type");
+  const divSel = document.getElementById("new-team-division");
+  if (divSel) divSel.style.display = "none";
+  const divLabel = divSel?.previousElementSibling;
+  if (divLabel) divLabel.style.display = "none";
+  document.getElementById("add-team-modal").classList.add("open");
+  document.getElementById("new-team-name").focus();
+};
+
+// ── VB Rename / Delete ──
+window.startRenameVBTeam = function(teamId) {
+  const team = vbTeams.find(t => t.id === teamId);
+  if (!team) return;
+  const nameEl = document.querySelector(`.team-accordion[data-team-id="${teamId}"] .ta-name`);
+  if (!nameEl) return;
+  const orig = team.name;
+  nameEl.innerHTML = `
+    <input class="rename-team-input" id="vbrename-${teamId}" value="${orig}"
+           onclick="event.stopPropagation()" onkeydown="handleVBRenameKey(event,'${teamId}')">
+    <button class="abtn rename-save"   onclick="event.stopPropagation();saveRenameVBTeam('${teamId}')">Save</button>
+    <button class="abtn rename-cancel" onclick="event.stopPropagation();cancelRenameVBTeam('${teamId}','${orig}')">Cancel</button>`;
+  document.getElementById(`vbrename-${teamId}`)?.focus();
+};
+
+window.handleVBRenameKey = function(e, teamId) {
+  if (e.key === "Enter")  saveRenameVBTeam(teamId);
+  if (e.key === "Escape") {
+    const team = vbTeams.find(t => t.id === teamId);
+    if (team) cancelRenameVBTeam(teamId, team.name);
+  }
+};
+
+window.saveRenameVBTeam = async function(teamId) {
+  const inp  = document.getElementById(`vbrename-${teamId}`);
+  const name = inp?.value.trim();
+  if (!name) return;
+  const team = vbTeams.find(t => t.id === teamId);
+  if (!team) return;
+  team.name = name;
+  await updateDoc(doc(db, "volleyballTeams", teamId), { name });
+  renderVBTeams();
+};
+
+window.cancelRenameVBTeam = function(teamId, orig) {
+  const nameEl = document.querySelector(`.team-accordion[data-team-id="${teamId}"] .ta-name`);
+  if (nameEl) nameEl.textContent = orig;
+};
+
+window.deleteVBTeam = async function(teamId) {
+  const team = vbTeams.find(t => t.id === teamId);
+  if (!team) return;
+  if (!confirm(`Delete "${team.name}"? This cannot be undone.`)) return;
+  await deleteDoc(doc(db, "volleyballTeams", teamId));
+  vbTeams = vbTeams.filter(t => t.id !== teamId);
+  renderVBTeams();
+};
+
 // ── Division filter ──
 window.setDivision = function(divKey) {
   activeDivision = divKey;
@@ -256,6 +562,7 @@ function buildTeamAccordion(team, origIdx, rank) {
       </div>
       <div class="ta-actions">
         <div class="ta-admin-acts admin-only" style="display:flex;gap:6px">
+          <button class="abtn rename" onclick="event.stopPropagation();startRenameTeam('${team.id}')">Rename</button>
           <button class="abtn del" onclick="event.stopPropagation();deleteTeam('${team.id}')">Delete</button>
         </div>
         <button class="abtn roster ta-roster-btn" onclick="event.stopPropagation();openRosterModal(${origIdx})">Roster</button>
@@ -347,23 +654,40 @@ window.openAddTeamModal = function(preselectedDiv) {
 
 window.closeAddTeamModal = function() {
   document.getElementById("add-team-modal").classList.remove("open");
+  // Restore division fields if they were hidden for volleyball
+  const divSel = document.getElementById("new-team-division");
+  if (divSel) divSel.style.display = "";
+  const divLabel = divSel?.previousElementSibling;
+  if (divLabel) divLabel.style.display = "";
+  window._activeAddSport = null;
 };
 
 window.submitAddTeam = async function() {
   const nameEl = document.getElementById("new-team-name");
-  const divEl  = document.getElementById("new-team-division");
   const name   = nameEl.value.trim();
-  const division = divEl.value;
   if (!name) { nameEl.focus(); return; }
 
-  const data = { name, wins: 0, losses: 0, roster: [], division };
+  if (window._activeAddSport === "volleyball") {
+    const data = { name, wins: 0, losses: 0, roster: [] };
+    try {
+      const ref = await addDoc(VB_TEAMS, data);
+      vbTeams.push({ id: ref.id, ...data });
+      renderVBTeams();
+      closeAddTeamModal();
+    } catch (e) { alert("Failed to add team: " + e.message); }
+    window._activeAddSport = null;
+    return;
+  }
+
+  const divEl    = document.getElementById("new-team-division");
+  const division = divEl.value;
+  const data     = { name, wins: 0, losses: 0, roster: [], division };
   try {
     const ref = await addDoc(TEAMS, data);
     teams.push({ id: ref.id, ...data });
     buildAllPlayers();
     renderDivision(division);
     closeAddTeamModal();
-    // Switch to the division tab we just added to
     setDivision(division);
   } catch (e) {
     alert("Failed to add team: " + e.message);
@@ -386,11 +710,65 @@ window.deleteTeam = async function(teamId) {
   }
 };
 
+// ── Rename Team ──
+window.startRenameTeam = function(teamId) {
+  const team    = teams.find(t => t.id === teamId);
+  const nameEl  = document.querySelector(`[data-team-id="${teamId}"] .ta-name`);
+  if (!team || !nameEl) return;
+
+  const oldName = team.name;
+  nameEl.innerHTML = `
+    <input id="rename-input-${teamId}" class="rename-team-input"
+           value="${oldName}" maxlength="40"
+           onclick="event.stopPropagation()"
+           onkeydown="handleRenameKey(event,'${teamId}')">
+    <button class="abtn rename-save" onclick="event.stopPropagation();saveRenameTeam('${teamId}')">Save</button>
+    <button class="abtn rename-cancel" onclick="event.stopPropagation();cancelRenameTeam('${teamId}','${oldName}')">Cancel</button>`;
+
+  const input = document.getElementById(`rename-input-${teamId}`);
+  input?.focus();
+  input?.select();
+};
+
+window.handleRenameKey = function(e, teamId) {
+  if (e.key === "Enter")  { e.preventDefault(); window.saveRenameTeam(teamId); }
+  if (e.key === "Escape") { e.stopPropagation(); window.cancelRenameTeam(teamId, teams.find(t => t.id === teamId)?.name || ""); }
+};
+
+window.saveRenameTeam = async function(teamId) {
+  const input   = document.getElementById(`rename-input-${teamId}`);
+  const newName = input?.value.trim();
+  const team    = teams.find(t => t.id === teamId);
+  if (!newName || !team) return;
+  if (newName === team.name) { window.cancelRenameTeam(teamId, team.name); return; }
+
+  input.disabled = true;
+  try {
+    await updateDoc(doc(db, "teams", teamId), { name: newName });
+    const oldName = team.name;
+    team.name = newName;
+    buildAllPlayers();
+    renderDivision(team.division || DEFAULT_DIVISION);
+    showToast(`Renamed "${oldName}" → "${newName}"`);
+  } catch (e) {
+    input.disabled = false;
+    showToast("Rename failed: " + e.message);
+  }
+};
+
+window.cancelRenameTeam = function(teamId, originalName) {
+  const nameEl = document.querySelector(`[data-team-id="${teamId}"] .ta-name`);
+  if (nameEl) nameEl.textContent = originalName;
+};
+
 // ── Roster Modal ──
 window.openRosterModal = function(origIdx) {
   currentTeamIndex = origIdx;
   currentTeamId    = teams[origIdx].id;
+  window._activeRosterSport = null;
   document.getElementById("team-roster-title").textContent = `Roster — ${teams[origIdx].name}`;
+  document.getElementById("player-name").value   = "";
+  document.getElementById("player-number").value = "";
   renderRoster();
   document.getElementById("roster-modal").classList.add("open");
 };
@@ -405,10 +783,112 @@ function renderRoster() {
   }
   roster.forEach((p, i) => {
     const li = document.createElement("li");
-    li.innerHTML = `<span>#${p.number} — ${p.name}</span><button onclick="removePlayer(${i})">Remove</button>`;
+    li.dataset.idx = i;
+    li.innerHTML = `
+      <span>#${p.number} — ${p.name}</span>
+      <div style="display:flex;gap:6px">
+        <button onclick="removePlayer(${i})">Remove</button>
+      </div>`;
     ul.appendChild(li);
   });
 }
+
+window.startEditNumber = function(idx) {
+  const li     = document.querySelector(`#player-list li[data-idx="${idx}"]`);
+  const player = teams[currentTeamIndex]?.roster[idx];
+  if (!li || !player) return;
+  li.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;flex:1">
+      <span style="color:var(--t3);font-weight:700">#</span>
+      <input type="number" id="num-edit-${idx}" class="num-edit-input"
+             value="${player.number}" min="0" max="99">
+      <span style="color:var(--t2);font-size:13px">— ${player.name}</span>
+    </div>
+    <div style="display:flex;gap:6px">
+      <button class="plist-btn-save" onclick="saveEditNumber(${idx})">Save</button>
+      <button class="plist-btn-cancel" onclick="renderRoster()">Cancel</button>
+    </div>`;
+  const input = document.getElementById(`num-edit-${idx}`);
+  if (input) {
+    input.focus();
+    input.select();
+    input.addEventListener("keydown", e => {
+      if (e.key === "Enter") window.saveEditNumber(idx);
+      if (e.key === "Escape") renderRoster();
+    });
+  }
+};
+
+window.saveEditNumber = async function(idx) {
+  const input  = document.getElementById(`num-edit-${idx}`);
+  const newNum = input?.value.trim();
+  if (!newNum) { showToast("Enter a jersey number."); return; }
+
+  const roster = teams[currentTeamIndex].roster;
+  if (roster.some((p, i) => i !== idx && p.number === newNum)) {
+    showToast(`Jersey #${newNum} is already taken on this team.`); return;
+  }
+
+  const oldNum    = roster[idx].number;
+  const oldRoster = roster.map(p => ({ ...p }));
+  roster[idx]     = { ...roster[idx], number: newNum };
+
+  try {
+    await updateDoc(doc(db, "teams", currentTeamId), { roster });
+    showToast(`#${oldNum} → #${newNum} for ${roster[idx].name}`);
+    renderRoster();
+  } catch (e) {
+    teams[currentTeamIndex].roster = oldRoster;
+    showToast("Failed: " + e.message);
+    renderRoster();
+  }
+};
+
+// ── BB jersey # edit from player panel ──
+window.openBBEditNumber = function() {
+  const p = currentPlayer;
+  if (!p) return;
+  const numEl = document.getElementById("profile-number");
+  numEl.innerHTML = `<span class="vb-num-edit">
+    #<input type="number" id="bb-num-inp" value="${p.number}" min="0" max="99">
+    <button class="inline-save" id="bb-num-save-btn">✓</button>
+    <button class="inline-cancel" id="bb-num-cancel-btn">✕</button>
+  </span>`;
+  const inp = document.getElementById("bb-num-inp");
+  if (inp) { inp.focus(); inp.select(); }
+  inp?.addEventListener("keydown", e => { if (e.key === "Enter") saveBBEditNumber(); });
+  document.getElementById("bb-num-save-btn")?.addEventListener("click", saveBBEditNumber);
+  document.getElementById("bb-num-cancel-btn")?.addEventListener("click", () => {
+    document.getElementById("profile-number").textContent = `#${p.number}`;
+  });
+};
+
+window.saveBBEditNumber = async function() {
+  const p      = currentPlayer;
+  if (!p) return;
+  const newNum = document.getElementById("bb-num-inp")?.value.trim();
+  if (!newNum) { showToast("Enter a jersey number."); return; }
+
+  const team = teams.find(t => t.id === p.teamId);
+  if (!team) return;
+  if (team.roster.some(r => r.name !== p.name && r.number === newNum)) {
+    showToast(`Jersey #${newNum} is already taken on this team.`); return;
+  }
+
+  const oldNum = p.number;
+  const roster = team.roster.map(r =>
+    r.name === p.name && r.number === oldNum ? { ...r, number: newNum } : r
+  );
+  try {
+    await updateDoc(doc(db, "teams", team.id), { roster });
+    p.number = newNum;
+    document.getElementById("profile-number").textContent = `#${newNum}`;
+    showToast(`#${oldNum} → #${newNum} for ${p.name}`);
+  } catch (e) {
+    showToast("Failed: " + e.message);
+    document.getElementById("profile-number").textContent = `#${oldNum}`;
+  }
+};
 
 window.addPlayerToRoster = async function() {
   const nameEl = document.getElementById("player-name");
@@ -416,6 +896,22 @@ window.addPlayerToRoster = async function() {
   const name   = nameEl.value.trim();
   const number = numEl.value.trim();
   if (!name || !number) { alert("Enter both a name and jersey number."); return; }
+
+  if (window._activeRosterSport === "volleyball") {
+    const team = vbTeams[vbCurrentTeamIdx];
+    if (!team) return;
+    if (!team.roster) team.roster = [];
+    if (team.roster.some(p => p.number === number)) {
+      alert(`Jersey #${number} is already taken on this team.`); return;
+    }
+    team.roster.push({ name, number });
+    try {
+      await updateDoc(doc(db, "volleyballTeams", team.id), { roster: team.roster });
+      nameEl.value = ""; numEl.value = "";
+      renderVBRoster(team.roster);
+    } catch (e) { team.roster.pop(); alert("Failed: " + e.message); }
+    return;
+  }
 
   const roster = teams[currentTeamIndex].roster;
   if (roster.some(p => p.number === number)) {
@@ -443,10 +939,20 @@ window.removePlayer = async function(idx) {
 };
 
 window.saveRoster = async function() {
+  if (window._activeRosterSport === "volleyball") {
+    const team = vbTeams[vbCurrentTeamIdx];
+    if (!team) return;
+    try {
+      await updateDoc(doc(db, "volleyballTeams", team.id), { roster: team.roster });
+      renderVBTeams();
+      closeRosterModal();
+    } catch (e) { alert("Save failed: " + e.message); }
+    window._activeRosterSport = null;
+    return;
+  }
   try {
     await updateDoc(doc(db, "teams", currentTeamId), { roster: teams[currentTeamIndex].roster });
     buildAllPlayers();
-    // Force re-populate the team's player grid
     const inner = document.getElementById(`ta-inner-${currentTeamId}`);
     const body  = document.getElementById(`ta-body-${currentTeamId}`);
     if (inner) {
@@ -461,6 +967,393 @@ window.closeRosterModal = function() {
   document.getElementById("roster-modal").classList.remove("open");
 };
 
+// ══════════════════════════════════════════════
+//  VOLLEYBALL PLAYER PROFILE
+// ══════════════════════════════════════════════
+
+function findVBStatKey(name, number, playerStats) {
+  if (!playerStats) return null;
+  for (const side of ["home", "away"]) {
+    const k = `${name}_${number}_${side}`;
+    if (playerStats[k]) return k;
+  }
+  return null;
+}
+
+function aggregateVBStats(name, number, games) {
+  const totals = { kills:0, aces:0, blocks:0, digs:0, assists:0, attackErrors:0, serviceErrors:0 };
+  const gameLog = [];
+
+  games.forEach(g => {
+    const key = findVBStatKey(name, number, g.playerStats);
+    if (!key) return;
+    const s = g.playerStats[key];
+    totals.kills         += s.kills         || 0;
+    totals.aces          += s.aces          || 0;
+    totals.blocks        += s.blocks        || 0;
+    totals.digs          += s.digs          || 0;
+    totals.assists       += s.assists       || 0;
+    totals.attackErrors  += s.attackErrors  || 0;
+    totals.serviceErrors += s.serviceErrors || 0;
+    gameLog.push({
+      gameId:   g.id,
+      code:     g.code || g.id?.slice(0, 6),
+      date:     g.createdAt?.toDate?.() || new Date(),
+      homeTeam: g.homeTeam,
+      awayTeam: g.awayTeam,
+      stats:    s,
+    });
+  });
+
+  return { totals, gameLog };
+}
+
+function buildVBAllPlayers() {
+  vbAllPlayers = [];
+  const seen = new Set();
+
+  vbTeams.forEach((team, ti) => {
+    (team.roster || []).forEach((player, pi) => {
+      const uid = `${player.name}__${player.number}`;
+      if (seen.has(uid)) return;
+      seen.add(uid);
+
+      const avColor  = AV_COLORS[(ti + pi) % AV_COLORS.length];
+      const initials = player.name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) || "?";
+      const { totals, gameLog } = aggregateVBStats(player.name, player.number, allVBGames);
+
+      vbAllPlayers.push({ name: player.name, number: player.number, teamId: team.id, teamName: team.name, avColor, initials, stats: totals, gameLog });
+    });
+  });
+}
+
+function populateVBTeamBody(teamId, inner) {
+  const team = vbTeams.find(t => t.id === teamId);
+  if (!team || !team.roster?.length) {
+    inner.innerHTML = `<div style="padding:16px;color:var(--t3);font-size:13px">No players yet — add via Roster.</div>`;
+    return;
+  }
+
+  const grid = document.createElement("div");
+  grid.className = "player-grid";
+
+  team.roster.forEach(p => {
+    const vbp = vbAllPlayers.find(x => x.name === p.name && String(x.number) === String(p.number));
+    if (!vbp) return;
+    const s = vbp.stats;
+
+    const card = document.createElement("div");
+    card.className = "player-card";
+    card.innerHTML = `
+      <div class="pc-avatar ${vbp.avColor}">${vbp.initials}</div>
+      <div class="pc-number">#${p.number}</div>
+      <div class="pc-name">${p.name}</div>
+      <div class="pc-stats">${s.kills||0}K · ${s.digs||0}DIG · ${s.aces||0}ACE · ${s.blocks||0}BLK</div>`;
+    card.onclick = () => openVBPlayerPanel(vbp);
+    grid.appendChild(card);
+  });
+
+  inner.innerHTML = "";
+  inner.appendChild(grid);
+}
+
+function openVBPlayerPanel(player, gameFilter = null) {
+  currentVBPlayer = player;
+  document.getElementById("vb-player-panel").classList.add("open");
+  document.getElementById("vb-panel-backdrop").classList.add("open");
+  document.body.style.overflow = "hidden";
+
+  const isAdmin = userProfile?.role === "admin";
+  ["vb-panel-trade-btn", "vb-panel-num-btn"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = isAdmin ? "" : "none";
+  });
+
+  const stats = gameFilter ? gameFilter.stats : player.stats;
+  const label = gameFilter
+    ? `${gameFilter.homeTeam?.name || "Home"} vs ${gameFilter.awayTeam?.name || "Away"}`
+    : "Season Totals";
+
+  renderVBHero(player, stats, label);
+  renderVBStatCards(stats);
+  renderVBCharts(player, stats);
+  renderVBGameHistory(player, gameFilter?.gameId || null);
+  document.getElementById("vb-panel-body").scrollTop = 0;
+}
+
+window.closeVBPlayerPanel = function() {
+  document.getElementById("vb-player-panel").classList.remove("open");
+  document.getElementById("vb-panel-backdrop").classList.remove("open");
+  document.body.style.overflow = "";
+  currentVBPlayer = null;
+};
+
+// ── Jersey # inline edit ──
+window.openVBEditNumber = function() {
+  const p = currentVBPlayer;
+  if (!p) return;
+  const el = document.getElementById("vb-profile-number");
+  el.innerHTML = `<span class="vb-num-edit">
+    #<input type="number" id="vb-num-inp" value="${p.number}" min="0" max="99">
+    <button class="inline-save" id="vb-num-save-btn">✓</button>
+    <button class="inline-cancel" id="vb-num-cancel-btn">✕</button>
+  </span>`;
+  const inp = document.getElementById("vb-num-inp");
+  if (inp) { inp.focus(); inp.select(); }
+  inp?.addEventListener("keydown", e => { if (e.key === "Enter") saveVBEditNumber(); });
+  document.getElementById("vb-num-save-btn")?.addEventListener("click", saveVBEditNumber);
+  document.getElementById("vb-num-cancel-btn")?.addEventListener("click", () => renderVBHero(currentVBPlayer, currentVBPlayer.stats, "Season Totals"));
+};
+
+window.saveVBEditNumber = async function() {
+  const p = currentVBPlayer;
+  if (!p) return;
+  const newNum = parseInt(document.getElementById("vb-num-inp")?.value, 10);
+  if (isNaN(newNum) || newNum < 0 || newNum > 99) return;
+
+  const team = vbTeams.find(t => t.id === p.teamId);
+  if (!team) return;
+  const roster = (team.roster || []).map(r =>
+    (r.name === p.name && String(r.number) === String(p.number))
+      ? { ...r, number: String(newNum) }
+      : r
+  );
+  await updateDoc(doc(db, "volleyballTeams", p.teamId), { roster });
+  p.number = String(newNum);
+  renderVBHero(p, p.stats, "Season Totals");
+};
+
+
+// ── VB Trade Modal ──
+window.openVBTradeModal = function() {
+  const player = currentVBPlayer;
+  if (!player) return;
+  tradePlayer = player;
+
+  document.getElementById("trade-player-info").innerHTML = `
+    <div class="trade-player-card">
+      <div class="pc-avatar ${player.avColor}" style="width:44px;height:44px;font-size:18px">${player.initials}</div>
+      <div>
+        <div style="font-size:16px;font-weight:700;color:var(--t1)">${player.name}</div>
+        <div style="font-size:12px;color:var(--t3)">#${player.number} &nbsp;·&nbsp; ${player.teamName}</div>
+      </div>
+    </div>`;
+
+  const sel = document.getElementById("trade-dest");
+  sel.innerHTML = `<option value="">— Select destination team —</option>`;
+  vbTeams.filter(t => t.id !== player.teamId).forEach(t => {
+    const opt = document.createElement("option");
+    opt.value = t.id;
+    opt.textContent = t.name;
+    sel.appendChild(opt);
+  });
+
+  const noteEl = document.querySelector("#trade-modal .trade-note");
+  if (noteEl) noteEl.textContent = "This will move the player to the selected volleyball team.";
+
+  const submitBtn = document.getElementById("trade-submit-btn");
+  submitBtn.onclick = executeVBTrade;
+  document.getElementById("trade-modal").classList.add("open");
+};
+
+async function executeVBTrade() {
+  const toTeamId = document.getElementById("trade-dest").value;
+  if (!toTeamId || !tradePlayer) return;
+
+  const fromTeam = vbTeams.find(t => t.id === tradePlayer.teamId);
+  const toTeam   = vbTeams.find(t => t.id === toTeamId);
+  if (!fromTeam || !toTeam) return;
+
+  const btn = document.getElementById("trade-submit-btn");
+  btn.disabled = true;
+  btn.textContent = "Trading…";
+
+  try {
+    const newFrom = (fromTeam.roster || []).filter(
+      r => !(r.name === tradePlayer.name && String(r.number) === String(tradePlayer.number))
+    );
+    const newTo = [...(toTeam.roster || []), { name: tradePlayer.name, number: tradePlayer.number }];
+    await updateDoc(doc(db, "volleyballTeams", fromTeam.id), { roster: newFrom });
+    await updateDoc(doc(db, "volleyballTeams", toTeam.id),   { roster: newTo });
+    closeTradeModal();
+    closeVBPlayerPanel();
+  } catch (e) {
+    alert("Trade failed: " + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Confirm Trade";
+    btn.onclick = executeVBTrade;
+  }
+}
+
+function renderVBHero(p, s, label) {
+  s = s || {};
+  const killAtt = (s.kills || 0) + (s.attackErrors || 0);
+  const killPct = killAtt > 0 ? (((s.kills || 0) / killAtt) * 100).toFixed(1) + "%" : "—";
+
+  document.getElementById("vb-profile-avatar").className   = `profile-avatar ${p.avColor}`;
+  document.getElementById("vb-profile-avatar").textContent = p.initials;
+  document.getElementById("vb-profile-number").textContent = `#${p.number}`;
+  document.getElementById("vb-profile-name").textContent   = p.name;
+  document.getElementById("vb-profile-team").innerHTML =
+    `${p.teamName}` +
+    ` <span style="color:var(--t3);font-size:12px;margin-left:6px">${label}</span>` +
+    ` <button id="vb-view-team-btn" style="background:none;border:none;color:var(--purple);font-size:12px;cursor:pointer;margin-left:10px;font-weight:700;padding:0;">View Team →</button>`;
+
+  document.getElementById("vb-view-team-btn")?.addEventListener("click", () => {
+    closeVBPlayerPanel();
+    setTimeout(() => {
+      const accordion = document.querySelector(`[data-team-id="${p.teamId}"]`);
+      if (accordion) {
+        accordion.scrollIntoView({ behavior: "smooth", block: "start" });
+        const body = document.getElementById(`vb-body-${p.teamId}`);
+        if (body && !body.classList.contains("open")) toggleVBTeam(p.teamId);
+      }
+    }, 350);
+  });
+
+  const badges = [];
+  if ((s.kills  || 0) >= 10) badges.push({ label: "10+ Kills",  color: "gold"   });
+  if ((s.aces   || 0) >= 3)  badges.push({ label: "3+ Aces",    color: "blue"   });
+  if ((s.digs   || 0) >= 15) badges.push({ label: "15+ Digs",   color: "green"  });
+  if ((s.blocks || 0) >= 5)  badges.push({ label: "5+ Blocks",  color: "purple" });
+  if (!badges.length)         badges.push({ label: "On Roster",  color: "blue"   });
+  document.getElementById("vb-profile-badges").innerHTML = badges.map(b =>
+    `<span class="badge badge-${b.color}">${b.label}</span>`
+  ).join("");
+
+  document.getElementById("vb-profile-headline-stats").innerHTML = `
+    <div class="hs-stat"><div class="hs-val">${s.kills||0}</div><div class="hs-lbl">Kills</div></div>
+    <div class="hs-stat"><div class="hs-val">${s.digs||0}</div><div class="hs-lbl">Digs</div></div>
+    <div class="hs-stat"><div class="hs-val">${s.aces||0}</div><div class="hs-lbl">Aces</div></div>
+    <div class="hs-stat"><div class="hs-val">${killPct}</div><div class="hs-lbl">Kill%</div></div>`;
+}
+
+function renderVBStatCards(s) {
+  s = s || {};
+  const cards = [
+    { val: s.kills         || 0, lbl: "Kills"      },
+    { val: s.digs          || 0, lbl: "Digs"       },
+    { val: s.aces          || 0, lbl: "Aces"       },
+    { val: s.assists       || 0, lbl: "Assists"     },
+    { val: s.blocks        || 0, lbl: "Blocks"      },
+    { val: s.attackErrors  || 0, lbl: "Atk Errors"  },
+    { val: s.serviceErrors || 0, lbl: "Svc Errors"  },
+  ];
+  document.getElementById("vb-stat-cards-row").innerHTML = cards.map(c => `
+    <div class="sc-card">
+      <div class="sc-card-val">${c.val}</div>
+      <div class="sc-card-lbl">${c.lbl}</div>
+    </div>`).join("");
+}
+
+function renderVBCharts(player, s) {
+  s = s || {};
+  [vbChartAttack, vbChartRadar, vbChartDonut, vbChartHistory].forEach(c => c?.destroy());
+  vbChartAttack = vbChartRadar = vbChartDonut = vbChartHistory = null;
+
+  // Stat breakdown bar
+  vbChartAttack = new Chart(document.getElementById("vbAttackChart"), {
+    type: "bar",
+    data: {
+      labels: ["Kills", "Digs", "Aces", "Assists", "Blocks", "Atk Err", "Svc Err"],
+      datasets: [{ data: [s.kills||0, s.digs||0, s.aces||0, s.assists||0, s.blocks||0, s.attackErrors||0, s.serviceErrors||0],
+        backgroundColor: [C.gold, C.teal, C.blue, C.grn, C.purple, C.red, C.org], borderRadius: 6 }]
+    },
+    options: { responsive:true, maintainAspectRatio:false,
+      plugins: { legend:{ display:false } },
+      scales: { x:{ grid:{color:C.line}, ticks:{color:C.t2,font:{size:11}} }, y:{ grid:{color:C.line}, ticks:{color:C.t2}, beginAtZero:true } }
+    }
+  });
+
+  // Radar
+  const maxVal = Math.max(5, s.kills||0, s.digs||0, s.aces||0, s.assists||0, s.blocks||0);
+  const norm   = v => parseFloat(((v / maxVal) * 10).toFixed(1));
+  vbChartRadar = new Chart(document.getElementById("vbRadarChart"), {
+    type: "radar",
+    data: {
+      labels: ["Kills", "Digs", "Aces", "Assists", "Blocks"],
+      datasets: [{ data: [norm(s.kills||0), norm(s.digs||0), norm(s.aces||0), norm(s.assists||0), norm(s.blocks||0)],
+        borderColor: C.gold, backgroundColor: "rgba(245,197,24,0.15)", borderWidth: 2, pointBackgroundColor: C.gold }]
+    },
+    options: { responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:false } },
+      scales:{ r:{ grid:{color:C.line}, ticks:{display:false}, pointLabels:{color:C.t2,font:{size:12}} } }
+    }
+  });
+
+  // Donut — positive contributions only
+  const vals   = [s.kills||0, s.digs||0, s.aces||0, s.assists||0, s.blocks||0];
+  const lbls   = ["Kills","Digs","Aces","Assists","Blocks"];
+  const colors = [C.gold, C.teal, C.blue, C.grn, C.purple];
+  const active = vals.map((v, i) => ({ v, l: lbls[i], c: colors[i] })).filter(x => x.v > 0);
+  vbChartDonut = new Chart(document.getElementById("vbDonutChart"), {
+    type: "doughnut",
+    data: { labels: active.map(x => x.l),
+      datasets: [{ data: active.map(x => x.v), backgroundColor: active.map(x => x.c), borderWidth: 0 }] },
+    options: { responsive:true, maintainAspectRatio:false, cutout:"65%",
+      plugins:{ legend:{ position:"bottom", labels:{color:C.t2,font:{size:12},padding:12} } } }
+  });
+}
+
+function renderVBGameHistory(player, filterGameId = null) {
+  const listEl = document.getElementById("vb-game-history-list");
+  const { gameLog } = player;
+
+  if (!gameLog.length) {
+    listEl.innerHTML = `<div style="color:var(--t3);padding:12px;font-size:13px">No games recorded yet.</div>`;
+    return;
+  }
+
+  const sorted = [...gameLog].sort((a, b) => new Date(b.date) - new Date(a.date));
+  listEl.innerHTML = "";
+  sorted.forEach(g => {
+    const s       = g.stats;
+    const isActive = filterGameId === g.gameId;
+    const dateStr  = (g.date instanceof Date ? g.date : new Date(g.date))
+      .toLocaleDateString("en-CA", { month: "short", day: "numeric" });
+    const row = document.createElement("div");
+    row.className = `gh-card-row${isActive ? " active" : ""}`;
+    row.innerHTML = `
+      <div class="gh-card-top">
+        <div class="gh-card-left">
+          <span class="gh-card-badge game">${dateStr}</span>
+          <div class="gh-card-title">${g.homeTeam?.name||"Home"} vs ${g.awayTeam?.name||"Away"}</div>
+        </div>
+        <div class="gh-card-pills">
+          <span class="gh-pill"><span class="gh-pill-val">${s.kills||0}</span><span class="gh-pill-lbl">K</span></span>
+          <span class="gh-pill"><span class="gh-pill-val">${s.digs||0}</span><span class="gh-pill-lbl">DIG</span></span>
+          <span class="gh-pill"><span class="gh-pill-val">${s.aces||0}</span><span class="gh-pill-lbl">ACE</span></span>
+          <span class="gh-pill"><span class="gh-pill-val">${s.blocks||0}</span><span class="gh-pill-lbl">BLK</span></span>
+        </div>
+      </div>`;
+    row.addEventListener("click", () => openVBPlayerPanel(player, isActive ? null : g));
+    listEl.appendChild(row);
+  });
+
+  // Per-game trend chart
+  if (vbChartHistory) { vbChartHistory.destroy(); vbChartHistory = null; }
+  const chartEl = document.getElementById("vbHistoryChart");
+  if (!chartEl) return;
+
+  const rev = [...sorted].reverse();
+  vbChartHistory = new Chart(chartEl, {
+    type: "line",
+    data: {
+      labels: rev.map((_, i) => `G${i + 1}`),
+      datasets: [
+        { label:"Kills", data: rev.map(g => g.stats.kills||0),  borderColor:C.gold, backgroundColor:"rgba(245,197,24,.08)", tension:.3, pointRadius:4, pointBackgroundColor:C.gold },
+        { label:"Digs",  data: rev.map(g => g.stats.digs||0),   borderColor:C.teal, backgroundColor:"rgba(20,184,166,.08)",  tension:.3, pointRadius:4, pointBackgroundColor:C.teal },
+        { label:"Aces",  data: rev.map(g => g.stats.aces||0),   borderColor:C.blue, backgroundColor:"rgba(59,130,246,.08)", tension:.3, pointRadius:4, pointBackgroundColor:C.blue },
+      ]
+    },
+    options: { responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:false } },
+      scales:{ x:{grid:{color:C.line},ticks:{color:C.t2}}, y:{grid:{color:C.line},ticks:{color:C.t2},beginAtZero:true} }
+    }
+  });
+}
+
 // ── Player Panel ──
 function openPlayerPanel(player, gameFilter = null) {
   currentPlayer = player;
@@ -469,11 +1362,11 @@ function openPlayerPanel(player, gameFilter = null) {
   document.getElementById("panel-backdrop").classList.add("open");
   document.body.style.overflow = "hidden";
 
-  // Show Trade button only for admins (need 2+ teams to trade between)
+  const isAdmin = userProfile?.role === "admin";
   const tradeBtn = document.getElementById("panel-trade-btn");
-  if (tradeBtn) {
-    tradeBtn.style.display = userProfile?.role === "admin" && teams.length > 1 ? "inline-flex" : "none";
-  }
+  if (tradeBtn) tradeBtn.style.display = isAdmin && teams.length > 1 ? "inline-flex" : "none";
+  const numBtn = document.getElementById("panel-num-btn");
+  if (numBtn) numBtn.style.display = isAdmin ? "" : "none";
 
   const displayStats = gameFilter ? gameFilter.stats : player.stats;
   const viewLabel    = gameFilter ? `Game: ${gameFilter.gameName}` : "Season Totals";
@@ -569,7 +1462,23 @@ function renderHero(p, s, viewLabel) {
   el("profile-avatar").textContent = p.initials;
   el("profile-number").textContent = `#${p.number}`;
   el("profile-name").textContent   = p.name;
-  el("profile-team").innerHTML     = `${p.teamName} <span style="color:var(--t3);font-size:12px;margin-left:8px">${viewLabel}</span>`;
+  el("profile-team").innerHTML =
+    `${p.teamName}` +
+    ` <span style="color:var(--t3);font-size:12px;margin-left:8px">${viewLabel}</span>` +
+    ` <button id="bb-view-team-btn" style="background:none;border:none;color:var(--gold);font-size:12px;cursor:pointer;margin-left:10px;font-weight:700;padding:0">View Team →</button>`;
+  document.getElementById("bb-view-team-btn")?.addEventListener("click", () => {
+    closePlayerPanel();
+    setTimeout(() => {
+      const div   = p.division || DEFAULT_DIVISION;
+      setDivision(div);
+      const accordion = document.querySelector(`.team-accordion[data-team-id="${p.teamId}"]`);
+      if (accordion) {
+        accordion.scrollIntoView({ behavior: "smooth", block: "start" });
+        const body = document.getElementById(`ta-body-${p.teamId}`);
+        if (body && !body.classList.contains("open")) toggleTeam(p.teamId);
+      }
+    }, 350);
+  });
   el("profile-badges").innerHTML   = getBadges(s).map(b =>
     `<span class="badge badge-${b.color}">${b.label}</span>`
   ).join("");
@@ -1045,6 +1954,9 @@ window.openTradeModal = function() {
   const player = currentPlayer;
   if (!player) return;
   tradePlayer = player;
+  const noteEl = document.querySelector("#trade-modal .trade-note");
+  if (noteEl) noteEl.textContent = "Both coaches will receive an in-app notification about this trade.";
+  document.getElementById("trade-submit-btn").onclick = window.executeTrade;
 
   // Populate player info card
   document.getElementById("trade-player-info").innerHTML = `

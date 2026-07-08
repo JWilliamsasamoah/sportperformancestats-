@@ -21,7 +21,6 @@ const app  = initializeApp(FB);
 const auth = getAuth(app);
 const db   = getFirestore(app);
 const GAMES_COL = collection(db, "gameRooms");
-const TEAMS_COL = collection(db, "teams");
 
 const DIV_LABELS = {
   "boy11-14": "Boys 11–14",
@@ -29,10 +28,20 @@ const DIV_LABELS = {
   "girl11-18": "Girls 11–18",
 };
 
-let teams       = [];
-let userProfile = null;
-let canManage   = false; // admin or stats
-let unsubGames  = null;
+let teams        = [];
+let activeSport  = "basketball";
+let userProfile  = null;
+let canManage    = false;
+let unsubGames   = null;
+let lastCreatedCode = null;
+
+// ── Sport toggle ──
+window.setSport = function(sport) {
+  activeSport = sport;
+  document.getElementById("pill-basketball").classList.toggle("active", sport === "basketball");
+  document.getElementById("pill-volleyball").classList.toggle("active", sport === "volleyball");
+  loadTeams();
+};
 
 // ── Boot ──
 document.addEventListener("DOMContentLoaded", () => {
@@ -67,37 +76,48 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-// ── Load teams into dropdowns, grouped by division ──
+// ── Load teams into dropdowns ──
 async function loadTeams() {
   try {
-    const snap = await getDocs(TEAMS_COL);
+    const colRef = collection(db, activeSport === "volleyball" ? "volleyballTeams" : "teams");
+    const snap   = await getDocs(colRef);
     teams = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
     const homeSelect = document.getElementById("new-home-team");
     const awaySelect = document.getElementById("new-away-team");
 
-    // Group by division
-    const grouped = {};
-    teams.forEach(t => {
-      const div = t.division || "boy11-14";
-      if (!grouped[div]) grouped[div] = [];
-      grouped[div].push(t);
-    });
-
-    [homeSelect, awaySelect].forEach(sel => {
-      sel.innerHTML = `<option value="">— Select team —</option>`;
-      Object.entries(grouped).forEach(([div, ts]) => {
-        const grp = document.createElement("optgroup");
-        grp.label = DIV_LABELS[div] || div;
-        ts.forEach(t => {
+    if (activeSport === "volleyball") {
+      [homeSelect, awaySelect].forEach(sel => {
+        sel.innerHTML = `<option value="">— Select team —</option>`;
+        teams.forEach(t => {
           const opt = document.createElement("option");
           opt.value = t.id;
-          opt.textContent = `${t.name}`;
-          grp.appendChild(opt);
+          opt.textContent = t.name;
+          sel.appendChild(opt);
         });
-        sel.appendChild(grp);
       });
-    });
+    } else {
+      const grouped = {};
+      teams.forEach(t => {
+        const div = t.division || "boy11-14";
+        if (!grouped[div]) grouped[div] = [];
+        grouped[div].push(t);
+      });
+      [homeSelect, awaySelect].forEach(sel => {
+        sel.innerHTML = `<option value="">— Select team —</option>`;
+        Object.entries(grouped).forEach(([div, ts]) => {
+          const grp = document.createElement("optgroup");
+          grp.label = DIV_LABELS[div] || div;
+          ts.forEach(t => {
+            const opt = document.createElement("option");
+            opt.value = t.id;
+            opt.textContent = t.name;
+            grp.appendChild(opt);
+          });
+          sel.appendChild(grp);
+        });
+      });
+    }
   } catch (e) {
     showToast("Failed to load teams: " + e.message);
   }
@@ -148,11 +168,17 @@ function buildGameCard(g) {
 
   const card = document.createElement("div");
   card.className = `game-card${status === "done" ? " done" : ""}`;
+  const isVB   = g.sport === "volleyball";
+  const sportBadge = isVB ? `<span class="gc-sport-badge vb">VB</span>` : `<span class="gc-sport-badge bb">BB</span>`;
+  const metaLine = isVB
+    ? `Set ${g.currentSet || 1} — Sets: ${g.homeSets || 0}–${g.awaySets || 0}`
+    : `Period ${g.period || 1} of 4`;
 
   card.innerHTML = `
     <div class="gc-top">
       <div class="gc-top-left">
         <span class="gc-code" title="Click to copy" onclick="copyCode(event,'${g.code}')">${g.code} <span class="gc-copy-icon">⎘</span></span>
+        ${sportBadge}
         ${div ? `<span class="gc-div">${DIV_LABELS[div] || div}</span>` : ""}
       </div>
       <span class="gc-status ${status}">${status === "active" ? `<span class="gc-live-dot"></span>` : ""}${statusLabel}</span>
@@ -168,7 +194,7 @@ function buildGameCard(g) {
       <span class="gc-pts${g.awayScore > g.homeScore ? " leading" : ""}">${g.awayScore || 0}</span>
     </div>
     <div class="gc-meta">
-      <span>Period ${g.period || 1} of 4</span>
+      <span>${metaLine}</span>
       <span>${formatTimeAgo(created)}</span>
     </div>
     <div class="gc-actions">
@@ -212,17 +238,32 @@ async function createGame() {
   btn.textContent = "Creating…"; btn.disabled = true;
 
   try {
-    await setDoc(doc(db, "gameRooms", code), {
+    const baseDoc = {
       code, homeTeam, awayTeam,
+      sport: activeSport,
       homeScore: 0, awayScore: 0,
-      homeFouls: 0, awayFouls: 0,
-      homeTimeouts: 0, awayTimeouts: 0,
-      period: 1, clockSeconds: 420, clockRunning: false,
-      playerStats: {}, teamStats: {}, log: "",
+      playerStats: {}, log: "",
       status: "active",
       createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
-    });
+    };
 
+    if (activeSport === "volleyball") {
+      Object.assign(baseDoc, {
+        homeSets: 0, awaySets: 0,
+        homeSetScore: 0, awaySetScore: 0,
+        currentSet: 1, setScores: [],
+      });
+    } else {
+      Object.assign(baseDoc, {
+        homeFouls: 0, awayFouls: 0,
+        homeTimeouts: 0, awayTimeouts: 0,
+        period: 1, clockSeconds: 420, clockRunning: false,
+        teamStats: {},
+      });
+    }
+
+    await setDoc(doc(db, "gameRooms", code), baseDoc);
+    lastCreatedCode = code;
     showRoomCodeModal(code, homeTeam.name, awayTeam.name);
   } catch (e) {
     showToast("Failed to create game: " + e.message);
@@ -244,7 +285,8 @@ window.closeRoomModal = function() {
 
 window.goToGame = function() {
   const code = document.getElementById("modal-code").textContent;
-  window.location.href = `game.html?room=${code}`;
+  const page = activeSport === "volleyball" ? "volleyball_game.html" : "game.html";
+  window.location.href = `${page}?room=${code}`;
 };
 
 window.copyModalCode = function() {
@@ -269,7 +311,9 @@ async function joinGame() {
   if (!snap.exists()) { showToast(`Room "${code}" not found`); return; }
   if (snap.data().archived) { showToast("That game has been archived"); return; }
 
-  window.location.href = `game.html?room=${code}`;
+  const sport = snap.data().sport || "basketball";
+  const page  = sport === "volleyball" ? "volleyball_game.html" : "game.html";
+  window.location.href = `${page}?room=${code}`;
 }
 
 // ── Archive ──
@@ -292,8 +336,11 @@ function formatTimeAgo(date) {
   return date.toLocaleDateString("en-CA", { month: "short", day: "numeric" });
 }
 
-function openGame(code) {
-  window.location.href = `game.html?room=${code}`;
+async function openGame(code) {
+  const snap = await getDoc(doc(db, "gameRooms", code));
+  const sport = snap.exists() ? (snap.data().sport || "basketball") : "basketball";
+  const page  = sport === "volleyball" ? "volleyball_game.html" : "game.html";
+  window.location.href = `${page}?room=${code}`;
 }
 
 function showToast(msg) {

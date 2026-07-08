@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
-  getAuth, createUserWithEmailAndPassword, onAuthStateChanged
+  getAuth, createUserWithEmailAndPassword, onAuthStateChanged, sendEmailVerification
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import {
   getFirestore, doc, setDoc, getDoc, getDocs,
@@ -19,6 +19,12 @@ const FB = {
 const app  = initializeApp(FB);
 const auth = getAuth(app);
 const db   = getFirestore(app);
+
+// ── EmailJS ──
+const EJS_SERVICE  = "service_5wsc8cv";
+const EJS_TEMPLATE = "template_k1c59gg";
+const EJS_KEY      = "dfno0btEY6cfultg7";
+emailjs.init(EJS_KEY);
 
 const DIVISION_LABELS = {
   "boy11-14":  "Boys 11–14",
@@ -182,9 +188,17 @@ btnEl.addEventListener("click", async () => {
       createdAt: serverTimestamp(),
     };
 
-    // Write profile and claim username atomically
+    // Write profile and claim username
     await setDoc(doc(db, "users", uid), profile);
     await setDoc(doc(db, "usernames", username), { uid });
+
+    // Send verification email via Firebase (best-effort)
+    try { await sendEmailVerification(cred.user); } catch (_) {}
+
+    // Send styled welcome email via EmailJS (best-effort)
+    try {
+      await emailjs.send(EJS_SERVICE, EJS_TEMPLATE, { name, email });
+    } catch (_) {}
 
     window.location.href = "teams_players.html";
   } catch (e) {

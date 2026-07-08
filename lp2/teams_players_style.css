@@ -70,12 +70,28 @@ body {
 }
 .nav-logout-btn:hover { background: var(--bg2); color: var(--t1); border-color: var(--line2); }
 
+/* ── SPORT TABS ── */
+.sport-tabs {
+  display: flex; gap: 0; background: var(--bg1);
+  border-bottom: 1px solid var(--line);
+  padding: 0 20px;
+  position: sticky; top: 111px; z-index: 750;
+}
+.sport-tab {
+  padding: 12px 20px; font-family: 'DM Sans', sans-serif;
+  font-size: 13px; font-weight: 700; border: none; background: transparent;
+  color: var(--t3); cursor: pointer; border-bottom: 2px solid transparent;
+  transition: color .15s, border-color .15s; margin-bottom: -1px;
+}
+.sport-tab:hover { color: var(--t2); }
+.sport-tab.active { color: var(--t1); border-bottom-color: var(--gold); }
+
 /* ── DIVISION TOGGLE + SEARCH BAR ── */
 .division-toggle {
   display: flex; align-items: center; justify-content: space-between;
   gap: 12px; padding: 10px 20px;
   background: var(--bg1); border-bottom: 1px solid var(--line);
-  position: sticky; top: 111px; z-index: 700;
+  position: sticky; top: 153px; z-index: 700;
 }
 .div-btns { display: flex; gap: 8px; flex-shrink: 0; }
 
@@ -168,8 +184,16 @@ body {
   cursor: pointer; transition: filter .12s;
 }
 .abtn:hover  { filter: brightness(1.15); }
-.abtn.roster { background: var(--blue);   color: #fff; }
-.abtn.del    { background: var(--red);    color: #fff; }
+.abtn.roster       { background: var(--blue);   color: #fff; }
+.abtn.del          { background: var(--red);    color: #fff; }
+.abtn.rename       { background: var(--bg3);    color: var(--t2); }
+.abtn.rename-save  { background: var(--grn);    color: #fff; }
+.abtn.rename-cancel{ background: var(--bg3);    color: var(--t3); }
+.rename-team-input {
+  padding: 3px 8px; font-size: 14px; font-weight: 600;
+  background: var(--bg1); border: 1.5px solid var(--gold);
+  border-radius: 5px; color: var(--t1); outline: none; width: 160px;
+}
 
 /* ── TEAM ACCORDION ── */
 .teams-list { display: flex; flex-direction: column; gap: 8px; }
@@ -551,9 +575,20 @@ input::placeholder { color: var(--t3); }
 .plist li button {
   font-size: 12px; font-weight: 700; padding: 5px 12px;
   background: var(--red); color: #fff; border: none;
-  border-radius: 5px; cursor: pointer; transition: filter .12s;
+  border-radius: 5px; cursor: pointer; transition: filter .12s; white-space: nowrap;
 }
 .plist li button:hover { filter: brightness(1.1); }
+.plist li button.plist-btn-edit   { background: #3b82f6; }
+.plist li button.plist-btn-save   { background: var(--grn); }
+.plist li button.plist-btn-cancel { background: var(--line); color: var(--t2); }
+.num-edit-input {
+  width: 58px; padding: 4px 8px; font-size: 14px; font-weight: 700;
+  background: var(--bg1); border: 1.5px solid #f5c518; border-radius: 5px;
+  color: var(--t1); outline: none; text-align: center;
+  -moz-appearance: textfield;
+}
+.num-edit-input::-webkit-inner-spin-button,
+.num-edit-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 .plist::-webkit-scrollbar { width: 5px; }
 .plist::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
 
@@ -667,6 +702,51 @@ input::placeholder { color: var(--t3); }
   font-size: 12px; color: var(--t3);
   padding: 8px 0 0; line-height: 1.5;
 }
+
+/* ── VB PLAYER PANEL: Purple theme ── */
+.vb-panel-hdr {
+  background: linear-gradient(to right, rgba(168,85,247,.12) 0%, var(--bg1) 65%);
+  border-bottom: 1px solid rgba(168,85,247,.25);
+}
+.vb-panel-hdr .panel-title { color: #c084fc; letter-spacing: 1.5px; }
+
+#vb-player-panel .profile-hero::before {
+  background: linear-gradient(135deg, transparent 0%, rgba(168,85,247,.07) 100%);
+}
+#vb-player-panel .profile-number { color: var(--purple); }
+
+/* Inline edit pencil icon */
+.edit-pencil {
+  background: transparent; border: none; color: var(--t3);
+  cursor: pointer; font-size: 11px; padding: 0 3px;
+  opacity: .6; transition: opacity .15s, color .15s;
+  vertical-align: middle; line-height: 1;
+}
+.edit-pencil:hover { opacity: 1; color: var(--purple); }
+
+/* Jersey # inline edit */
+.vb-num-edit { display: inline-flex; align-items: center; gap: 4px; }
+.vb-num-edit input {
+  width: 46px; padding: 2px 6px; text-align: center;
+  font-family: 'Bebas Neue', sans-serif; font-size: 13px; letter-spacing: 2px;
+  background: var(--bg2); border: 1.5px solid var(--purple); border-radius: 4px;
+  color: var(--purple); outline: none;
+  -moz-appearance: textfield;
+}
+.vb-num-edit input::-webkit-inner-spin-button,
+.vb-num-edit input::-webkit-outer-spin-button { -webkit-appearance: none; }
+.inline-save   { background: var(--grn); color:#fff; border:none; border-radius:3px; padding:2px 7px; cursor:pointer; font-size:10px; font-weight:700; }
+.inline-cancel { background:transparent; color:var(--t3); border:none; cursor:pointer; font-size:13px; padding:0 2px; }
+
+
+/* VB panel action bar */
+.vb-panel-actions { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.abtn.vb-hdr-btn {
+  background: rgba(168,85,247,.15); color: #c084fc;
+  border: 1px solid rgba(168,85,247,.35); font-size:12px;
+  transition: background .15s, filter .15s;
+}
+.abtn.vb-hdr-btn:hover { background: rgba(168,85,247,.25); }
 
 /* ── NOTIFICATION BELL ── */
 .notif-bell {

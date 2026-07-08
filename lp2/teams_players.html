@@ -21,6 +21,12 @@
     </ul>
   </nav>
 
+  <!-- SPORT TABS -->
+  <div class="sport-tabs" id="sport-tabs">
+    <button class="sport-tab active" id="tab-basketball" onclick="setSportTab('basketball')">🏀 Basketball</button>
+    <button class="sport-tab"        id="tab-volleyball" onclick="setSportTab('volleyball')">🏐 Volleyball</button>
+  </div>
+
   <!-- DIVISION TOGGLE + SEARCH -->
   <div class="division-toggle" id="division-toggle">
     <div class="div-btns">
@@ -75,6 +81,18 @@
       <div id="teams-girl11-18" class="teams-list"></div>
     </section>
 
+  </div>
+
+  <!-- VOLLEYBALL TEAMS (hidden until volleyball tab active) -->
+  <div class="tp-page" id="vb-page" style="display:none">
+    <div class="tp-loading" id="vb-loading" style="display:none">Loading…</div>
+    <section class="division-section" id="div-volleyball">
+      <div class="division-header">
+        <span class="division-label">Volleyball Teams</span>
+        <button class="pbtn add admin-only" onclick="openAddVBTeamModal()">+ Add Team</button>
+      </div>
+      <div id="teams-volleyball" class="teams-list"></div>
+    </section>
   </div>
 
   <!-- MANAGE USERS MODAL (Admin only) -->
@@ -182,12 +200,70 @@
     </div>
   </div>
 
+  <!-- VB PLAYER PROFILE PANEL -->
+  <div class="panel-backdrop" id="vb-panel-backdrop" onclick="closeVBPlayerPanel()"></div>
+  <div class="player-panel" id="vb-player-panel">
+    <div class="panel-header vb-panel-hdr">
+      <span class="panel-title">🏐 Volleyball Player Profile</span>
+      <div class="vb-panel-actions">
+        <button class="abtn vb-hdr-btn" id="vb-panel-num-btn"   style="display:none" onclick="openVBEditNumber()">✏ Jersey #</button>
+        <button class="abtn trade"      id="vb-panel-trade-btn" style="display:none" onclick="openVBTradeModal()">⇌ Trade</button>
+        <button class="panel-close" onclick="closeVBPlayerPanel()">✕</button>
+      </div>
+    </div>
+    <div class="panel-body" id="vb-panel-body">
+      <div class="profile-view">
+        <div class="profile-hero">
+          <div class="profile-avatar" id="vb-profile-avatar"></div>
+          <div class="profile-info">
+            <div class="profile-number" id="vb-profile-number"></div>
+            <h1 class="profile-name" id="vb-profile-name"></h1>
+            <div class="profile-team" id="vb-profile-team"></div>
+            <div class="profile-badges" id="vb-profile-badges"></div>
+          </div>
+          <div class="profile-headline-stats" id="vb-profile-headline-stats"></div>
+        </div>
+        <div class="stat-cards-row" id="vb-stat-cards-row"></div>
+        <div class="profile-charts-grid">
+          <div class="profile-chart-card">
+            <div class="pcc-title">Stat Breakdown</div>
+            <div style="position:relative;height:260px"><canvas id="vbAttackChart"></canvas></div>
+          </div>
+          <div class="profile-chart-card">
+            <div class="pcc-title">Performance Radar</div>
+            <div style="position:relative;height:260px"><canvas id="vbRadarChart"></canvas></div>
+          </div>
+          <div class="profile-chart-card">
+            <div class="pcc-title">Contribution Split</div>
+            <div style="position:relative;height:260px"><canvas id="vbDonutChart"></canvas></div>
+          </div>
+        </div>
+        <div class="game-history-section">
+          <div class="profile-chart-card gh-card">
+            <div class="pcc-title">Game History — click to filter</div>
+            <div id="vb-game-history-list" class="game-history-list"></div>
+          </div>
+          <div class="profile-chart-card">
+            <div class="pcc-title">Kills, Digs &amp; Aces Per Game</div>
+            <div class="gh-legend">
+              <span><span style="background:#f5c518"></span>Kills</span>
+              <span><span style="background:#14b8a6"></span>Digs</span>
+              <span><span style="background:#3b82f6"></span>Aces</span>
+            </div>
+            <div style="position:relative;height:260px"><canvas id="vbHistoryChart"></canvas></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- PLAYER PROFILE PANEL -->
   <div class="panel-backdrop" id="panel-backdrop" onclick="closePlayerPanel()"></div>
   <div class="player-panel" id="player-panel">
     <div class="panel-header">
       <span class="panel-title">Player Profile</span>
       <div style="display:flex;align-items:center;gap:10px">
+        <button class="abtn vb-hdr-btn" id="panel-num-btn" style="display:none" onclick="openBBEditNumber()">✏ Jersey #</button>
         <button class="abtn trade" id="panel-trade-btn" style="display:none" onclick="openTradeModal()">&#8646; Trade Player</button>
         <button class="panel-close" onclick="closePlayerPanel()">✕</button>
       </div>

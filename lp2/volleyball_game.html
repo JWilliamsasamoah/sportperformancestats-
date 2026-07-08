@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sport Performance Stats · Volleyball</title>
+  <link rel="icon" href="logo.svg">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/gridjs/dist/theme/mermaid.min.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="responsive.css">
+</head>
+<body>
+
+  <nav class="navbar vb-navbar">
+    <a href="lobby.html" class="vb-nav-back">← Lobby</a>
+    <div class="vb-nav-center">
+      <div class="room-badge" id="room-badge">Loading…</div>
+      <span class="vb-sport-tag">🏐 VOLLEYBALL</span>
+    </div>
+    <div class="vb-nav-right" id="vb-nav-right">
+      <!-- auth injected here -->
+    </div>
+    <ul class="nav-links" id="nav-links" style="display:none">
+      <li id="nav-live-badge" style="display:none"><span class="live-view-badge">LIVE VIEW</span></li>
+    </ul>
+  </nav>
+
+  <!-- No room -->
+  <div id="no-room-view" style="display:none">
+    <div class="no-room">
+      <div class="nr-icon">🏐</div>
+      <h2>No Game Room</h2>
+      <p>You need a room code to open a game.</p>
+      <a href="lobby.html" class="lbtn-inline">← Go to Lobby</a>
+    </div>
+  </div>
+
+  <!-- Main app -->
+  <div id="app-view" style="display:none">
+
+    <div class="view-bar">
+      <button class="vbtn active" id="scoreboard-toggle" onclick="toggleView('scoreboard')">Scoreboard</button>
+      <button class="vbtn"        id="stats-toggle"      onclick="toggleView('stats')">Box Score</button>
+    </div>
+
+    <!-- SCOREBOARD -->
+    <div id="scoreboard-view" class="view active">
+      <div class="board">
+
+        <!-- HOME PANEL -->
+        <section class="team-panel" id="home-panel">
+          <div class="team-top">
+            <div class="team-name-display" id="home-team-name">HOME</div>
+            <div class="big-score" id="home-set-score">0</div>
+            <div class="score-lbl">SET PTS</div>
+            <div class="pills">
+              <div class="pill">Sets <strong id="home-sets">0</strong></div>
+            </div>
+          </div>
+          <div class="roster-block">
+            <div class="roster-hdr" id="home-roster-hdr">ON COURT — tap to select</div>
+            <ul id="home-roster" class="roster"></ul>
+          </div>
+          <button class="sub-btn scorekeeper-only" onclick="openSubstitutionModal('home')">Substitute</button>
+        </section>
+
+        <!-- CENTER CONTROL PANEL -->
+        <section class="control-panel">
+          <div class="clock-block">
+            <!-- Set display replaces clock -->
+            <div class="vb-set-display">
+              <div class="vb-set-num" id="vb-set-num">SET 1</div>
+              <div class="vb-set-score-row">
+                <span class="vb-set-pts" id="vb-home-set-pts">0</span>
+                <span class="vb-set-sep">—</span>
+                <span class="vb-set-pts" id="vb-away-set-pts">0</span>
+              </div>
+              <div class="vb-sets-won" id="vb-sets-won">
+                <!-- filled by JS -->
+              </div>
+              <div class="vb-target" id="vb-target">First to 25 (win by 2)</div>
+              <!-- Target score editor (scorekeeper only) -->
+              <div class="vb-target-edit scorekeeper-only" style="display:none">
+                <label class="vb-target-lbl">Set target:</label>
+                <input type="number" id="set-target-input" class="vb-target-input" value="25" min="1" max="99">
+                <span class="vb-target-lbl">pts (win by 2)</span>
+              </div>
+            </div>
+
+            <!-- Scorekeeper controls -->
+            <div id="scorekeeper-controls" style="display:none">
+              <div class="vb-team-pts-row">
+                <button class="vb-pt-btn home-pt" onclick="awardPoint('home')">+ HOME POINT</button>
+                <button class="vb-pt-btn away-pt" onclick="awardPoint('away')">+ AWAY POINT</button>
+              </div>
+              <button class="end-game-btn" onclick="confirmEndMatch()">End Match</button>
+            </div>
+          </div>
+
+          <div id="scorekeeper-stats-controls" style="display:none">
+            <div class="sel-indicator" id="sel-indicator">
+              <span class="si-dot off"></span>
+              <span id="sel-label">No player selected</span>
+              <button class="undo-btn" onclick="undoLastStat()">Undo</button>
+            </div>
+
+            <div class="sgroups">
+              <div class="sg">
+                <div class="sg-lbl">SCORES (awards point to player's team)</div>
+                <div class="sgr">
+                  <button class="sb gld fat" onclick="handleStat('kills',  'Kill')">Kill</button>
+                  <button class="sb blu fat" onclick="handleStat('aces',   'Ace')">Ace</button>
+                  <button class="sb tel fat" onclick="handleStat('blocks', 'Block')">Block</button>
+                </div>
+              </div>
+              <div class="sg">
+                <div class="sg-lbl">ERRORS (awards point to opponent)</div>
+                <div class="sgr">
+                  <button class="sb red" onclick="handleStat('attackErrors',  'Attack Error')">Atk Error</button>
+                  <button class="sb red" onclick="handleStat('serviceErrors', 'Svc Error')">Svc Error</button>
+                </div>
+              </div>
+              <div class="sg">
+                <div class="sg-lbl">NO SCORE</div>
+                <div class="sgr wrap">
+                  <button class="sb chip" onclick="handleStat('digs',    'Dig')">Dig</button>
+                  <button class="sb chip" onclick="handleStat('assists', 'Assist')">Assist</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- AWAY PANEL -->
+        <section class="team-panel" id="away-panel">
+          <div class="team-top">
+            <div class="team-name-display" id="away-team-name">AWAY</div>
+            <div class="big-score" id="away-set-score">0</div>
+            <div class="score-lbl">SET PTS</div>
+            <div class="pills">
+              <div class="pill">Sets <strong id="away-sets">0</strong></div>
+            </div>
+          </div>
+          <div class="roster-block">
+            <div class="roster-hdr" id="away-roster-hdr">ON COURT — tap to select</div>
+            <ul id="away-roster" class="roster"></ul>
+          </div>
+          <button class="sub-btn scorekeeper-only" onclick="openSubstitutionModal('away')">Substitute</button>
+        </section>
+
+      </div>
+    </div>
+
+    <!-- BOX SCORE -->
+    <div id="stats-view" class="view">
+      <div class="stabs">
+        <button class="stab active" id="home-tab" onclick="showTab('home')">Home</button>
+        <button class="stab"        id="away-tab" onclick="showTab('away')">Away</button>
+        <button class="stab"        id="log-tab"  onclick="showTab('log')">Log</button>
+        <button class="stab accent"               onclick="exportStats()">Export</button>
+      </div>
+      <div class="sbody">
+        <div id="home-stats-tab" class="sc active">
+          <h2 class="stitle">Home Team — Box Score</h2>
+          <div id="home-stats"></div>
+        </div>
+        <div id="away-stats-tab" class="sc">
+          <h2 class="stitle">Away Team — Box Score</h2>
+          <div id="away-stats"></div>
+        </div>
+        <div id="log-stats-tab" class="sc">
+          <h2 class="stitle">Live Play Log</h2>
+          <div id="player-log" class="live-log"></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /app-view -->
+
+  <!-- MODAL: Substitution -->
+  <div id="substitution-modal" class="overlay" style="display:none">
+    <div class="modal">
+      <div class="mhdr"><span>Substitution</span><button class="mx" onclick="closeSubstitutionModal()">✕</button></div>
+      <div class="mbody">
+        <label class="mlbl">Remove from court:</label>
+        <select id="players-on-court" size="5" class="msel"></select>
+        <div class="swap-arr">↕</div>
+        <label class="mlbl">Bring in from bench:</label>
+        <select id="players-off-court" size="5" class="msel"></select>
+      </div>
+      <div class="mftr">
+        <button class="ctrl-btn grn" onclick="performSubstitution()">✓ Confirm</button>
+        <button class="ctrl-btn red" onclick="closeSubstitutionModal()">✕ Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: End Match -->
+  <div id="end-match-modal" class="overlay" style="display:none">
+    <div class="modal">
+      <div class="mhdr"><span>End Match</span></div>
+      <div class="mbody">
+        <div class="end-score-display" id="end-score-display"></div>
+        <p class="mdesc">This will mark the match as finished. Stats are saved automatically.</p>
+      </div>
+      <div class="mftr">
+        <button class="ctrl-btn red" id="end-match-confirm-btn">End Match</button>
+        <button class="ctrl-btn sec" id="end-match-cancel-btn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Match Over -->
+  <div id="match-over-modal" class="overlay" style="display:none">
+    <div class="modal">
+      <div class="mhdr"><span>Match Complete</span></div>
+      <div class="mbody">
+        <div class="end-score-display" id="match-over-display"></div>
+        <div id="set-scores-display" style="margin-top:12px;font-size:13px;color:var(--t3);text-align:center"></div>
+      </div>
+      <div class="mftr">
+        <button class="ctrl-btn grn" onclick="document.getElementById('match-over-modal').style.display='none'">Close</button>
+        <a href="lobby.html" class="ctrl-btn sec" style="text-decoration:none;display:flex;align-items:center;justify-content:center">← Lobby</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gridjs/dist/gridjs.umd.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.5/xlsx.full.min.js"></script>
+  <script type="module" src="volleyball_script.js"></script>
+
+  <style>
+    /* ── Compact volleyball navbar ── */
+    .vb-navbar {
+      padding: 0 20px; height: 54px; min-height: 54px;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .vb-nav-back {
+      font-size: 13px; font-weight: 700; color: var(--t2);
+      text-decoration: none; padding: 7px 13px; border-radius: 7px;
+      border: 1px solid var(--line); transition: all .15s; white-space: nowrap;
+    }
+    .vb-nav-back:hover { background: var(--bg2); color: var(--t1); }
+    .vb-nav-center {
+      display: flex; align-items: center; gap: 10px; flex: 1; justify-content: center;
+    }
+    .vb-sport-tag {
+      font-size: 11px; font-weight: 700; letter-spacing: 1px;
+      color: var(--purple); background: rgba(168,85,247,.1);
+      border: 1px solid rgba(168,85,247,.3); padding: 3px 10px; border-radius: 5px;
+    }
+    .vb-nav-right { display: flex; align-items: center; }
+    /* Move nav-user into vb-nav-right */
+    #nav-links { display: none !important; }
+    /* Auth guard appends to .nav-links, but we redirect it */
+
+    /* ── Target score editor ── */
+    .vb-target-edit {
+      display: flex; align-items: center; gap: 6px; margin-top: 4px;
+    }
+    .vb-target-lbl { font-size: 11px; color: var(--t3); white-space: nowrap; }
+    .vb-target-input {
+      width: 52px; padding: 4px 8px; text-align: center;
+      font-size: 15px; font-weight: 700; font-family: 'Bebas Neue', sans-serif;
+      background: var(--bg2); border: 1.5px solid var(--line); border-radius: 6px;
+      color: var(--gold); outline: none; transition: border-color .15s;
+      -moz-appearance: textfield;
+    }
+    .vb-target-input::-webkit-inner-spin-button,
+    .vb-target-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+    .vb-target-input:focus { border-color: var(--gold); }
+
+    /* ── Volleyball-specific scoreboard overrides ── */
+    .vb-set-display {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 10px; padding: 20px 0;
+    }
+    .vb-set-num {
+      font-family: 'Bebas Neue', sans-serif; font-size: 18px;
+      letter-spacing: 3px; color: var(--t3);
+    }
+    .vb-set-score-row {
+      display: flex; align-items: center; gap: 16px;
+    }
+    .vb-set-pts {
+      font-family: 'Bebas Neue', sans-serif; font-size: 64px;
+      color: var(--gold); line-height: 1;
+    }
+    .vb-set-sep {
+      font-family: 'Bebas Neue', sans-serif; font-size: 32px; color: var(--t3);
+    }
+    .vb-sets-won {
+      display: flex; align-items: center; gap: 20px;
+      font-size: 13px; color: var(--t2); font-weight: 600;
+    }
+    .vb-sets-dots { display: flex; gap: 5px; }
+    .vb-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--line); border: 1.5px solid var(--line2);
+      transition: background .2s;
+    }
+    .vb-dot.won { background: var(--gold); border-color: var(--gold); }
+    .vb-target { font-size: 11px; color: var(--t3); letter-spacing: .5px; }
+    .vb-team-pts-row {
+      display: flex; gap: 10px; margin-top: 12px;
+    }
+    .vb-pt-btn {
+      flex: 1; padding: 14px 8px;
+      font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 800;
+      letter-spacing: .5px; border: none; border-radius: 8px;
+      cursor: pointer; transition: filter .15s, transform .1s;
+    }
+    .vb-pt-btn:hover  { filter: brightness(1.15); transform: translateY(-1px); }
+    .vb-pt-btn:active { filter: brightness(.9);  transform: translateY(0); }
+    .vb-pt-btn.home-pt { background: rgba(245,197,24,.2); color: var(--gold); border: 1.5px solid rgba(245,197,24,.4); }
+    .vb-pt-btn.away-pt { background: rgba(59,130,246,.2); color: var(--blue); border: 1.5px solid rgba(59,130,246,.4); }
+
+    /* ── Nav user area ── */
+    .nav-user {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .nav-user-name {
+      font-size: 13px; font-weight: 600; color: var(--t1);
+    }
+    .nav-user-role {
+      font-size: 10px; font-weight: 700; letter-spacing: .5px;
+      padding: 2px 8px; border-radius: 20px; text-transform: uppercase;
+    }
+    .nav-role-admin  { background: rgba(245,197,24,.15); color: var(--gold);   border: 1px solid rgba(245,197,24,.3); }
+    .nav-role-stats  { background: rgba(59,130,246,.15);  color: var(--blue);  border: 1px solid rgba(59,130,246,.3); }
+    .nav-role-coach  { background: rgba(34,197,94,.15);   color: var(--grn);   border: 1px solid rgba(34,197,94,.3);  }
+    .nav-logout-btn {
+      background: transparent; color: var(--t2);
+      border: 1px solid var(--line); border-radius: 7px;
+      padding: 5px 11px; font-size: 12px; font-weight: 600;
+      cursor: pointer; transition: all .15s; white-space: nowrap;
+    }
+    .nav-logout-btn:hover { background: var(--bg2); color: var(--t1); border-color: var(--line2); }
+
+    /* ── Player selected green dot pulse ── */
+    .si-dot.on {
+      background: var(--grn) !important;
+      box-shadow: 0 0 0 3px rgba(34,197,94,.25), 0 0 8px var(--grn);
+      animation: pulse-dot 1.8s ease-in-out infinite;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { box-shadow: 0 0 0 3px rgba(34,197,94,.25), 0 0 8px var(--grn); }
+      50%       { box-shadow: 0 0 0 6px rgba(34,197,94,.1),  0 0 14px var(--grn); }
+    }
+  </style>
+</body>
+</html>

@@ -33,6 +33,13 @@
     <div id="create-section" style="display:none">
       <div class="create-card">
         <div class="create-card-label">New Game</div>
+
+        <!-- Sport selector -->
+        <div class="sport-toggle-row">
+          <button class="sport-pill active" id="pill-basketball" onclick="setSport('basketball')">🏀 Basketball</button>
+          <button class="sport-pill"        id="pill-volleyball" onclick="setSport('volleyball')">🏐 Volleyball</button>
+        </div>
+
         <div class="create-fields">
           <select id="new-home-team" class="lselect">
             <option value="">Loading teams…</option>
