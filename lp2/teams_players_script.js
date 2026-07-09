@@ -1175,10 +1175,13 @@ async function executeVBTrade() {
     const newTo = [...(toTeam.roster || []), { name: tradePlayer.name, number: tradePlayer.number }];
     await updateDoc(doc(db, "volleyballTeams", fromTeam.id), { roster: newFrom });
     await updateDoc(doc(db, "volleyballTeams", toTeam.id),   { roster: newTo });
+    const tradedName = tradePlayer.name;
+    const toTeamName = toTeam.name;
     closeTradeModal();
     closeVBPlayerPanel();
+    showToast(`${tradedName} traded to ${toTeamName}`);
   } catch (e) {
-    alert("Trade failed: " + e.message);
+    showToast("Trade failed: " + e.message);
   } finally {
     btn.disabled = false;
     btn.textContent = "Confirm Trade";
@@ -2056,9 +2059,11 @@ window.executeTrade = async function() {
       if (inner && body) { body.dataset.loaded = ""; populateTeamBody(id, inner); }
     });
 
+    const tradedName = tradePlayer.name;
+    const toTeamName = toTeam.name;
     closeTradeModal();
     closePlayerPanel();
-    showToast(`${tradePlayer.name} traded to ${toTeam.name}`);
+    showToast(`${tradedName} traded to ${toTeamName}`);
   } catch (e) {
     showToast("Trade failed: " + e.message);
   } finally {
