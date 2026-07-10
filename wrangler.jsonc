@@ -1,0 +1,14 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "sportperformancestats",
+  "compatibility_date": "2026-07-10",
+  "observability": {
+    "enabled": true
+  },
+  "assets": {
+    "directory": "lp2"
+  },
+  "compatibility_flags": [
+    "nodejs_compat"
+  ]
+}
