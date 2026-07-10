@@ -181,14 +181,25 @@ body {
 .abtn {
   font-size: 12px; font-weight: 700;
   padding: 6px 12px; border: none; border-radius: 6px;
-  cursor: pointer; transition: filter .12s;
+  cursor: pointer; transition: filter .15s, background .15s, transform .1s, box-shadow .15s;
 }
-.abtn:hover  { filter: brightness(1.15); }
+.abtn:hover        { filter: brightness(1.18); transform: translateY(-1px); box-shadow: 0 3px 10px rgba(0,0,0,.35); }
+.abtn:active       { transform: translateY(0); box-shadow: none; filter: brightness(0.95); }
 .abtn.roster       { background: var(--blue);   color: #fff; }
+.abtn.roster:hover { background: #5a9af8; box-shadow: 0 4px 14px rgba(59,130,246,.45); }
 .abtn.del          { background: var(--red);    color: #fff; }
+.abtn.del:hover    { background: #f46060; box-shadow: 0 4px 14px rgba(239,68,68,.45); }
 .abtn.rename       { background: var(--bg3);    color: var(--t2); }
+.abtn.rename:hover { background: var(--bg2); color: var(--t1); box-shadow: 0 3px 10px rgba(0,0,0,.4); }
 .abtn.rename-save  { background: var(--grn);    color: #fff; }
 .abtn.rename-cancel{ background: var(--bg3);    color: var(--t3); }
+.abtn.record-edit-btn {
+  background: transparent; color: var(--t3);
+  padding: 1px 5px; font-size: 11px;
+  border: 1px solid var(--line); opacity: 0;
+  transition: opacity 0.15s;
+}
+.ta-header:hover .record-edit-btn { opacity: 1; }
 .rename-team-input {
   padding: 3px 8px; font-size: 14px; font-weight: 600;
   background: var(--bg1); border: 1.5px solid var(--gold);
@@ -231,7 +242,16 @@ body {
 .tl { color: var(--red); font-weight: 700; font-size: 14px; }
 .ta-pct { font-size: 13px; color: var(--t2); }
 
-.ta-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.ta-actions {
+  display: flex; gap: 6px; flex-shrink: 0;
+  opacity: 0; transform: translateX(6px);
+  transition: opacity .18s ease, transform .18s ease;
+  pointer-events: none;
+}
+.ta-header:hover .ta-actions {
+  opacity: 1; transform: translateX(0);
+  pointer-events: auto;
+}
 
 .ta-chevron {
   font-size: 13px; color: var(--t3);

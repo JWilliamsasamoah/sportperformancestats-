@@ -129,9 +129,9 @@ async function loadAllData() {
   document.getElementById("tp-loading").style.display = "none";
 }
 
-// Auto-calculate wins/losses from completed game rooms
+// Auto-calculate wins/losses from completed game rooms (add on top of any manual offset)
 function calculateRecords(doneGames) {
-  teams.forEach(t => { t.wins = 0; t.losses = 0; });
+  teams.forEach(t => { t.wins = t.winsOffset || 0; t.losses = t.lossesOffset || 0; });
 
   doneGames.forEach(g => {
     if (g.homeScore == null || g.awayScore == null || g.homeScore === g.awayScore) return;
@@ -255,8 +255,8 @@ async function loadVBTeams() {
         const allVBRooms = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         allVBGames = allVBRooms.filter(g => g.playerStats && Object.keys(g.playerStats).length > 0);
 
-        // Recompute W/L
-        vbTeams.forEach(t => { t.wins = 0; t.losses = 0; });
+        // Recompute W/L (add game results on top of any manual offset)
+        vbTeams.forEach(t => { t.wins = t.winsOffset || 0; t.losses = t.lossesOffset || 0; });
         allVBRooms.filter(g => g.status === "done").forEach(g => {
           if (g.homeScore == null || g.awayScore == null || g.homeScore === g.awayScore) return;
           const home = vbTeams.find(t => t.id === g.homeTeam?.id);
@@ -326,10 +326,11 @@ function buildVBTeamAccordion(team, origIdx, rank) {
     <div class="ta-header" onclick="toggleVBTeam('${team.id}')">
       <span class="rank ${rClass}">${rank + 1}</span>
       <span class="ta-name">${team.name}${medal}</span>
-      <div class="ta-record">
+      <div class="ta-record" id="ta-record-${team.id}">
         <span class="tw">${team.wins || 0}W</span>
         <span class="tl">${team.losses || 0}L</span>
         <span class="ta-pct">${pct}</span>
+        <button class="abtn record-edit-btn admin-only" onclick="event.stopPropagation();openEditRecord('${team.id}','vb')" title="Edit record">✏</button>
       </div>
       <div class="ta-actions">
         <div class="ta-admin-acts admin-only" style="display:flex;gap:6px">
@@ -347,7 +348,7 @@ function buildVBTeamAccordion(team, origIdx, rank) {
     </div>`;
 
   if (userProfile?.role !== "admin") {
-    wrapper.querySelector(".admin-only")?.style.setProperty("display", "none");
+    wrapper.querySelectorAll(".admin-only").forEach(el => el.style.setProperty("display", "none"));
   }
   return wrapper;
 }
@@ -555,10 +556,11 @@ function buildTeamAccordion(team, origIdx, rank) {
     <div class="ta-header" onclick="toggleTeam('${team.id}')">
       <span class="rank ${rClass}">${rank + 1}</span>
       <span class="ta-name">${team.name}${medal}</span>
-      <div class="ta-record">
+      <div class="ta-record" id="ta-record-${team.id}">
         <span class="tw">${team.wins || 0}W</span>
         <span class="tl">${team.losses || 0}L</span>
         <span class="ta-pct">${pct}</span>
+        <button class="abtn record-edit-btn admin-only" onclick="event.stopPropagation();openEditRecord('${team.id}','bb')" title="Edit record">✏</button>
       </div>
       <div class="ta-actions">
         <div class="ta-admin-acts admin-only" style="display:flex;gap:6px">
@@ -576,9 +578,8 @@ function buildTeamAccordion(team, origIdx, rank) {
     </div>`;
 
   const role = userProfile?.role;
-  // Hide +W / +L / Delete for non-admins
   if (role !== "admin") {
-    wrapper.querySelector(".admin-only")?.style.setProperty("display", "none");
+    wrapper.querySelectorAll(".admin-only").forEach(el => el.style.setProperty("display", "none"));
   }
   // Roster button: hide for stats; coaches only see it on their own team
   const rosterBtn = wrapper.querySelector(".ta-roster-btn");
@@ -2001,6 +2002,84 @@ window.closeTradeModal = function() {
   document.getElementById("trade-modal").classList.remove("open");
   tradePlayer = null;
 };
+
+// ── Edit W/L Record ──
+window.openEditRecord = function(teamId, sport) {
+  const recEl = document.getElementById(`ta-record-${teamId}`);
+  if (!recEl) return;
+  const team = sport === "vb" ? vbTeams.find(t => t.id === teamId) : teams.find(t => t.id === teamId);
+  if (!team) return;
+
+  recEl.innerHTML = `
+    <input type="number" id="rec-w-${teamId}" value="${team.wins || 0}" min="0"
+      style="width:46px;padding:2px 5px;font-size:13px;background:var(--bg3);color:var(--t1);border:1px solid var(--line);border-radius:4px;text-align:center"
+      onclick="event.stopPropagation()">
+    <span style="color:var(--t3);font-size:12px;margin:0 1px">W</span>
+    <input type="number" id="rec-l-${teamId}" value="${team.losses || 0}" min="0"
+      style="width:46px;padding:2px 5px;font-size:13px;background:var(--bg3);color:var(--t1);border:1px solid var(--line);border-radius:4px;text-align:center"
+      onclick="event.stopPropagation()">
+    <span style="color:var(--t3);font-size:12px;margin:0 1px">L</span>
+    <button class="inline-save" style="padding:2px 7px">✓</button>
+    <button class="inline-cancel" style="padding:2px 7px">✕</button>
+  `;
+  const saveBtn   = recEl.querySelector(".inline-save");
+  const cancelBtn = recEl.querySelector(".inline-cancel");
+  saveBtn.addEventListener("click",   e => { e.stopPropagation(); saveEditRecord(teamId, sport); });
+  cancelBtn.addEventListener("click", e => { e.stopPropagation(); cancelEditRecord(teamId, sport); });
+  recEl.querySelector(`#rec-w-${teamId}`)?.select();
+};
+
+async function saveEditRecord(teamId, sport) {
+  const wInput = document.getElementById(`rec-w-${teamId}`);
+  const lInput = document.getElementById(`rec-l-${teamId}`);
+  if (!wInput || !lInput) return;
+
+  const newW = Math.max(0, parseInt(wInput.value) || 0);
+  const newL = Math.max(0, parseInt(lInput.value) || 0);
+
+  const team = sport === "vb" ? vbTeams.find(t => t.id === teamId) : teams.find(t => t.id === teamId);
+  if (!team) return;
+
+  // game-calculated portion = current total − current offset
+  const gameW = (team.wins   || 0) - (team.winsOffset   || 0);
+  const gameL = (team.losses || 0) - (team.lossesOffset || 0);
+  const newWinsOffset   = newW - gameW;
+  const newLossesOffset = newL - gameL;
+
+  const coll = sport === "vb" ? "volleyballTeams" : "teams";
+  try {
+    await updateDoc(doc(db, coll, teamId), { winsOffset: newWinsOffset, lossesOffset: newLossesOffset });
+    team.winsOffset   = newWinsOffset;
+    team.lossesOffset = newLossesOffset;
+    team.wins   = newW;
+    team.losses = newL;
+    // Re-render so rankings re-sort
+    if (sport === "vb") {
+      renderVBTeams();
+    } else {
+      renderDivision(team.division || DEFAULT_DIVISION);
+    }
+    showToast("Record updated");
+  } catch (e) {
+    showToast("Failed: " + e.message);
+    cancelEditRecord(teamId, sport);
+  }
+}
+
+function cancelEditRecord(teamId, sport) {
+  const recEl = document.getElementById(`ta-record-${teamId}`);
+  if (!recEl) return;
+  const team = sport === "vb" ? vbTeams.find(t => t.id === teamId) : teams.find(t => t.id === teamId);
+  if (!team) return;
+  const total = (team.wins || 0) + (team.losses || 0);
+  const pct   = total > 0 ? ((team.wins / total) * 100).toFixed(1) + "%" : "—";
+  recEl.innerHTML = `
+    <span class="tw">${team.wins || 0}W</span>
+    <span class="tl">${team.losses || 0}L</span>
+    <span class="ta-pct">${pct}</span>
+    <button class="abtn record-edit-btn" onclick="event.stopPropagation();openEditRecord('${teamId}','${sport}')" title="Edit record">✏</button>
+  `;
+}
 
 window.executeTrade = async function() {
   const toTeamId = document.getElementById("trade-dest").value;
